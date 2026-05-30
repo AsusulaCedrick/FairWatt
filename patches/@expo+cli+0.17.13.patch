@@ -1,0 +1,22 @@
+﻿diff --git a/build/src/start/server/metro/externals.js b/build/src/start/server/metro/externals.js
+index 0000000..0000000 100644
+--- a/build/src/start/server/metro/externals.js
++++ b/build/src/start/server/metro/externals.js
+@@ -1,9 +1,9 @@
+-const NODE_STDLIB_MODULES = [
+-    "fs/promises",
+-    ...(_module.builtinModules || // @ts-expect-error
+-    (process.binding ? Object.keys(process.binding("natives")) : []) || []).filter((x)=>!/^_|^(internal|v8|node-inspect)\/|\//.test(x) && ![
+-            "sys"
+-        ].includes(x)
+-    ), 
+-].sort();
++const NODE_STDLIB_MODULES = [
++    "fs/promises",
++    ...new Set((_module.builtinModules || // @ts-expect-error
++    (process.binding ? Object.keys(process.binding("natives")) : []) || []).map((x)=>typeof x === "string" ? x.replace(/^node:/, "") : x).filter((x)=>!/^_|^(internal|v8|node-inspect)\/|\//.test(x) && ![
++            "sys"
++        ].includes(x)
++    )), 
++].sort();
+ exports.NODE_STDLIB_MODULES = NODE_STDLIB_MODULES;
