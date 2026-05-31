@@ -11,7 +11,6 @@ import { PieChart, BarChart, LineChart } from "react-native-chart-kit";
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
-// 🛠️ FIX: Dalawang talon (`../../`) na para tumpak na tumuro sa root Services folder mo
 import { getDashboardData } from "../../Services/consumptionService";
 
 interface PieData {
@@ -32,7 +31,7 @@ interface ChartDataset {
 const screenWidth = Dimensions.get("window").width;
 
 export default function DashboardScreen() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, isDarkMode } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [totalMonthly, setTotalMonthly] = useState(0);
@@ -49,9 +48,15 @@ export default function DashboardScreen() {
     datasets: [{ data: [] }]
   });
 
-  // ==========================================
-  // 🔄 SECURITY ROUTE INTERCEPTOR GUARD
-  // ==========================================
+  const chartConfig = {
+    backgroundGradientFrom: isDarkMode ? "#1E1E1E" : "#FFF",
+    backgroundGradientTo: isDarkMode ? "#1E1E1E" : "#FFF",
+    color: (opacity = 1) => isDarkMode ? `rgba(255, 255, 255, ${opacity})` : `rgba(26, 68, 46, ${opacity})`,
+    labelColor: (opacity = 1) => isDarkMode ? `rgba(255, 255, 255, ${opacity})` : `rgba(100, 116, 139, ${opacity})`,
+    decimalPlaces: 0,
+    propsForDots: { r: "4", strokeWidth: "2", stroke: isDarkMode ? "#fff" : "#1A442E" }
+  };
+
   useEffect(() => {
     if (!isLoading && !user) {
       router.replace('/AuthScreen');
@@ -77,14 +82,14 @@ export default function DashboardScreen() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#1A442E" />
+      <View style={[styles.center, { backgroundColor: isDarkMode ? "#121212" : "#F5F7FA" }]}>
+        <ActivityIndicator size="large" color={isDarkMode ? "#fff" : "#1A442E"} />
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={[styles.container, { backgroundColor: isDarkMode ? "#121212" : "#F5F7FA" }]}>
       <ScreenHeader
         title="Energy Dashboard"
         subtitle="Live insights from appliance consumption and monthly cost trends."
@@ -99,20 +104,20 @@ export default function DashboardScreen() {
       </View>
 
       <View style={styles.row}>
-        <View style={styles.halfCard}>
-          <Text style={styles.labelGray}>DAILY COST</Text>
-          <Text style={styles.valueGreen}>₱ {totalDaily.toFixed(2)}</Text>
+        <View style={[styles.halfCard, { backgroundColor: isDarkMode ? "#1E1E1E" : "#FFF" }]}>
+          <Text style={[styles.labelGray, { color: isDarkMode ? "#aaa" : "#64748B" }]}>DAILY COST</Text>
+          <Text style={[styles.valueGreen, { color: isDarkMode ? "#fff" : "#1A442E" }]}>₱ {totalDaily.toFixed(2)}</Text>
         </View>
-        <View style={styles.halfCard}>
-          <Text style={styles.labelGray}>APPLIANCES</Text>
-          <Text style={styles.valueGreen}>{applianceCount}</Text>
+        <View style={[styles.halfCard, { backgroundColor: isDarkMode ? "#1E1E1E" : "#FFF" }]}>
+          <Text style={[styles.labelGray, { color: isDarkMode ? "#aaa" : "#64748B" }]}>APPLIANCES</Text>
+          <Text style={[styles.valueGreen, { color: isDarkMode ? "#fff" : "#1A442E" }]}>{applianceCount}</Text>
         </View>
       </View>
 
       {applianceCount > 0 ? (
         <>
-          <View style={styles.chartBox}>
-            <Text style={styles.chartTitle}>7-Day Trend</Text>
+          <View style={[styles.chartBox, { backgroundColor: isDarkMode ? "#1E1E1E" : "#FFF" }]}>
+            <Text style={[styles.chartTitle, { color: isDarkMode ? "#fff" : "#1A442E" }]}>7-Day Trend</Text>
             <LineChart
               data={lineData}
               width={screenWidth - 60}
@@ -126,8 +131,8 @@ export default function DashboardScreen() {
             />
           </View>
 
-          <View style={styles.chartBox}>
-            <Text style={styles.chartTitle}>Top 10 Appliances</Text>
+          <View style={[styles.chartBox, { backgroundColor: isDarkMode ? "#1E1E1E" : "#FFF" }]}>
+            <Text style={[styles.chartTitle, { color: isDarkMode ? "#fff" : "#1A442E" }]}>Top 10 Appliances</Text>
             <BarChart
               data={topAppliances}
               width={screenWidth - 60}
@@ -141,8 +146,8 @@ export default function DashboardScreen() {
             />
           </View>
 
-          <View style={styles.chartBox}>
-            <Text style={styles.chartTitle}>By Category</Text>
+          <View style={[styles.chartBox, { backgroundColor: isDarkMode ? "#1E1E1E" : "#FFF" }]}>
+            <Text style={[styles.chartTitle, { color: isDarkMode ? "#fff" : "#1A442E" }]}>By Category</Text>
             <PieChart
               data={pieData}
               width={screenWidth - 40}
@@ -157,21 +162,14 @@ export default function DashboardScreen() {
         </>
       ) : (
         <View style={styles.emptyBox}>
-          <Text style={styles.emptyText}>Add history to see energy insights.</Text>
+          <Text style={[styles.emptyText, { color: isDarkMode ? "#aaa" : "#64748B" }]}>Add history to see energy insights.</Text>
         </View>
       )}
     </ScrollView>
   );
 }
 
-const chartConfig = {
-  backgroundGradientFrom: "#FFF",
-  backgroundGradientTo: "#FFF",
-  color: (opacity = 1) => `rgba(26, 68, 46, ${opacity})`,
-  labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
-  decimalPlaces: 0,
-  propsForDots: { r: "4", strokeWidth: "2", stroke: "#1A442E" }
-};
+// ❌ Inalis natin dito ang duplicate na 'const chartConfig' para walang variable conflict error ang code mo.
 
 const styles = StyleSheet.create({
   container: { 
@@ -203,6 +201,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold" 
   },
   row: { 
+    flex: 1,
     flexDirection: "row", 
     justifyContent: "space-between", 
     marginBottom: 20 

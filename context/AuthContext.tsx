@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import type { Session, User } from '@supabase/supabase-js';
 import { DEV_MODE, mockUser } from '../config/dev';
 import { useRouter, useSegments } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type AuthContextType = {
   user: User | null;
@@ -11,20 +12,29 @@ type AuthContextType = {
   signUp: (email: string, password: string) => Promise<any>; 
   signOut: () => Promise<void>;
   refreshSession: () => Promise<void>;
+  isDarkMode: boolean;           // Added
+  toggleTheme: () => void;       // Added
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  // TEMP DEV MODE - AUTH DISABLED
   const [user, setUser] = useState<User | null>(DEV_MODE ? (mockUser as any) : null);
   const [session, setSession] = useState<Session | null>(DEV_MODE ? null : null);
   const [isLoading, setIsLoading] = useState<boolean>(DEV_MODE ? false : true);
+  const [isDarkMode, setIsDarkMode] = useState(false); // Added state
 
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
+    // Load Dark Mode Preference
+    const loadTheme = async () => {
+      const savedTheme = await AsyncStorage.getItem('theme');
+      if (savedTheme === 'dark') setIsDarkMode(true);
+    };
+    loadTheme();
+
     if (DEV_MODE) {
       setUser(mockUser as any);
       setSession(null);
@@ -37,9 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const initializeAuth = async () => {
       try {
         const { data, error } = await supabase.auth.getSession();
-        if (error) {
-          console.error('Supabase init session error:', error);
-        }
+        if (error) console.error('Supabase init session error:', error);
 
         if (mounted) {
           setSession(data?.session ?? null);
@@ -67,44 +75,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // ==========================================
-  // 🔒 ROUTE GUARD NAVIGATION LIFECYCLE
-  // ==========================================
+  // Theme Toggle Function
+  const toggleTheme = async () => {
+    const newTheme = !isDarkMode;
+    setIsDarkMode(newTheme);
+    await AsyncStorage.setItem('theme', newTheme ? 'dark' : 'light');
+  };
+
   useEffect(() => {
     if (isLoading) return;
 
     const currentSegments = segments as string[];
-    const nasaAuthScreen = currentSegments.includes('AuthScreen');
-    
-    // 🛠️ FIX: Added passthrough identifier to prevent the routing loop from ejecting recovery link traffic
-    const nasaResetScreen = currentSegments.includes('ResetPasswordScreen');
+    const isAuthScreen = currentSegments.includes('AuthScreen');
+    const isForgotPasswordScreen = currentSegments.includes('ForgotPassScreen') || currentSegments.includes('forgot-password');
+    const isResetPasswordScreen = currentSegments.includes('ResetPasswordScreen') || currentSegments.includes('reset-password');
 
-    if (!user && !nasaAuthScreen && !nasaResetScreen) {
+    if (!user && !isAuthScreen && !isForgotPasswordScreen && !isResetPasswordScreen) {
       router.replace('/AuthScreen');
     } 
-    else if (user && nasaAuthScreen) {
+    else if (user && isAuthScreen) {
       router.replace('/(tabs)/dashboard');
     }
   }, [user, isLoading, segments]); 
 
-  // ==========================================
-  // 🚀 CORE AUTH FUNCTIONS
-  // ==========================================
-  
   const signUp = async (email: string, password: string) => {
     if (DEV_MODE) {
       setUser(mockUser as any);
       return;
     }
-
     setIsLoading(true);
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          emailRedirectTo: 'exp://192.168.1.4:8081/--/AuthScreen',
-        },
+        options: { emailRedirectTo: 'exp://192.168.1.4:8081/--/AuthScreen' },
       });
       if (error) throw error;
       return data;
@@ -123,13 +127,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
       return;
     }
-
     setIsLoading(true);
     try {
       const { data, error } = await supabase.auth.getSession();
-      if (error) {
-        console.error('Supabase refresh session error:', error);
-      }
+      if (error) console.error('Supabase refresh session error:', error);
       setSession(data?.session ?? null);
       setUser(data?.session?.user ?? null);
     } catch (error) {
@@ -151,7 +152,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, signUp, signOut, refreshSession }}>
+    <AuthContext.Provider value={{ user, session, isLoading, signUp, signOut, refreshSession, isDarkMode, toggleTheme }}>
       {children}
     </AuthContext.Provider>
   );

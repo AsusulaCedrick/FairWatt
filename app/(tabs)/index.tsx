@@ -6,13 +6,12 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  TouchableOpacity,
   Alert,
   ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
-// 🛠️ FIX: Dalawang talon (`../../`) na para tumpak na tumuro sa root Services folder mo
 import { saveConsumptionRecord } from '../../Services/consumptionService';
 import { FormField } from '../../components/FormField';
 import { FormSelect } from '../../components/FormSelect';
@@ -39,18 +38,15 @@ const defaultRecord = {
 };
 
 export default function HomeScreen() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, isDarkMode } = useAuth();
   const router = useRouter();
   const [formValues, setFormValues] = useState(defaultRecord);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [result, setResult] = useState({ daily: 0, monthly: 0 });
   const [showResult, setShowResult] = useState(false);
-  const [modalType, setModalType] = useState<'save' | 'exit' | null>(null);
+  const [modalType, setModalType] = useState<'save' | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // ==========================================
-  // 🔄 SECURITY ROUTE INTERCEPTOR GUARD
-  // ==========================================
   useEffect(() => {
     if (!isLoading && !user) {
       router.replace('/AuthScreen');
@@ -59,27 +55,24 @@ export default function HomeScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.centeredLoading}>
-        <ActivityIndicator size="large" color="#1A442E" />
+      <View style={[styles.centeredLoading, { backgroundColor: isDarkMode ? '#121212' : '#F5F7FA' }]}>
+        <ActivityIndicator size="large" color={isDarkMode ? '#FFFFFF' : '#1A442E'} />
       </View>
     );
   }
 
-  // Smart Automation controls for form field state switches
   const updateField = (key: string, value: any) => {
     setFormValues((prev) => {
       const updated = { ...prev, [key]: value };
       
-      // 1. PERIOD CONDITIONAL LOGIC
       if (key === 'period') {
         if (value === 'Monthly') {
-          updated.hours = '24'; // Auto-force to 24 hours
+          updated.hours = '24';
         } else if (value === 'Daily') {
-          updated.hours = ''; // Reset back to empty to allow user typing
+          updated.hours = '';
         }
       }
 
-      // 2. PROVIDER AUTO-FILL RATE LOGIC
       if (key === 'provider') {
         if (value === 'Meralco') {
           updated.rate = '11.50';
@@ -88,7 +81,7 @@ export default function HomeScreen() {
         } else if (value === 'First Gen') {
           updated.rate = '10.20';
         } else if (value === 'Custom') {
-          updated.rate = ''; // Open field completely clean for custom tenant submeters
+          updated.rate = '';
         }
       }
       
@@ -115,8 +108,18 @@ export default function HomeScreen() {
 
     setSaving(true);
     try {
+      // ✅ MATYAGANG INAYOS: Explicitly na nating ipinapasa ang room property kasama ang form fields
       const { success, dailyCost, monthlyCost } = await saveConsumptionRecord({
-        ...formValues,
+        appliance: formValues.appliance,
+        category: formValues.category,
+        room: formValues.room, // 👈 Narito na, ligtas at 100% dynamic na ipapasa sa consumptionService mo!
+        unit: formValues.unit,
+        period: formValues.period,
+        value: formValues.value,
+        hours: formValues.hours,
+        quantity: formValues.quantity,
+        provider: formValues.provider,
+        rate: formValues.rate,
       });
 
       if (success) {
@@ -172,24 +175,24 @@ export default function HomeScreen() {
       return (
         <View key={field.key} style={styles.fieldContainer}>
           <View style={styles.stepperHeader}>
-            <Text style={styles.fieldLabel}>{field.label}</Text>
+            <Text style={[styles.fieldLabel, { color: isDarkMode ? '#CBD5E1' : '#334155' }]}>{field.label}</Text>
             {errors[field.key] ? <Text style={styles.errorText}>{errors[field.key]}</Text> : null}
           </View>
-          <View style={styles.stepperRow}>
+          <View style={[styles.stepperRow, { backgroundColor: isDarkMode ? '#2D3748' : '#F8FAFC', borderColor: isDarkMode ? '#4A5568' : '#CBD5E1' }]}>
             <TouchableOpacity
-              style={styles.stepperButton}
+              style={[styles.stepperButton, { backgroundColor: isDarkMode ? '#4A5568' : '#FFFFFF', borderColor: isDarkMode ? '#718096' : '#E2E8F0' }]}
               onPress={() => updateField('quantity', Math.max(field.min ?? 1, formValues.quantity - 1))}
               activeOpacity={0.75}
             >
-              <Text style={styles.stepperSymbol}>-</Text>
+              <Text style={[styles.stepperSymbol, { color: isDarkMode ? '#FFFFFF' : '#0F172A' }]}>-</Text>
             </TouchableOpacity>
-            <Text style={styles.stepperValue}>{formValues.quantity}</Text>
+            <Text style={[styles.stepperValue, { color: isDarkMode ? '#FFFFFF' : '#0F172A' }]}>{formValues.quantity}</Text>
             <TouchableOpacity
-              style={styles.stepperButton}
+              style={[styles.stepperButton, { backgroundColor: isDarkMode ? '#4A5568' : '#FFFFFF', borderColor: isDarkMode ? '#718096' : '#E2E8F0' }]}
               onPress={() => updateField('quantity', Math.min(field.max ?? 99, formValues.quantity + 1))}
               activeOpacity={0.75}
             >
-              <Text style={styles.stepperSymbol}>+</Text>
+              <Text style={[styles.stepperSymbol, { color: isDarkMode ? '#FFFFFF' : '#0F172A' }]}>+</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -220,21 +223,19 @@ export default function HomeScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: isDarkMode ? '#121212' : '#F5F7FA' }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <ScreenHeader
           title="FairWatt"
-          subtitle="Track appliance energy use with smart validation and save confirmation."
-          actionLabel="Exit"
-          onAction={() => setModalType('exit')}
+          subtitle="A Personal Electric Sub-Meter Tracker."
         />
 
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: isDarkMode ? '#1E1E1E' : '#FFFFFF' }]}>
           {fieldSections.map((section) => (
             <View key={section.title} style={styles.section}>
-              <Text style={styles.sectionTitle}>{section.title}</Text>
+              <Text style={[styles.sectionTitle, { color: isDarkMode ? '#FFFFFF' : '#0F172A' }]}>{section.title}</Text>
               {section.keys
                 .map((key) => formFields.find((field) => field.key === key))
                 .filter(Boolean)
@@ -243,14 +244,14 @@ export default function HomeScreen() {
           ))}
 
           {showResult ? (
-            <View style={styles.resultPreview}>
+            <View style={[styles.resultPreview, { backgroundColor: isDarkMode ? '#1E3A8A' : '#E0F2FE' }]}>
               <View style={styles.resultBox}>
-                <Text style={styles.resultLabel}>Daily Share</Text>
-                <Text style={styles.resultValue}>₱{result.daily.toFixed(2)}</Text>
+                <Text style={[styles.resultLabel, { color: isDarkMode ? '#93C5FD' : '#334155' }]}>Daily Share</Text>
+                <Text style={[styles.resultValue, { color: isDarkMode ? '#FFFFFF' : '#0F172A' }]}>₱{result.daily.toFixed(2)}</Text>
               </View>
-              <View style={[styles.resultBox, styles.monthlyBox]}>
-                <Text style={styles.resultLabel}>Monthly Share</Text>
-                <Text style={styles.resultValue}>₱{result.monthly.toFixed(2)}</Text>
+              <View style={[styles.resultBox, styles.monthlyBox, { borderColor: isDarkMode ? '#3B82F6' : '#B6E0FE' }]}>
+                <Text style={[styles.resultLabel, { color: isDarkMode ? '#93C5FD' : '#334155' }]}>Monthly Share</Text>
+                <Text style={[styles.resultValue, { color: isDarkMode ? '#FFFFFF' : '#0F172A' }]}>₱{result.monthly.toFixed(2)}</Text>
               </View>
             </View>
           ) : null}
@@ -270,18 +271,6 @@ export default function HomeScreen() {
         onCancel={() => setModalType(null)}
         onConfirm={handleSave}
         confirmText="Save"
-      />
-
-      <ConfirmModal
-        visible={modalType === 'exit'}
-        title="Exit FairWatt"
-        message="Are you sure you want to leave the tracker? Unsaved changes will be lost."
-        onCancel={() => setModalType(null)}
-        onConfirm={() => {
-          Alert.alert('Goodbye', 'You can reopen the app at any time to continue tracking.');
-          setModalType(null);
-        }}
-        confirmText="Exit"
       />
     </KeyboardAvoidingView>
   );

@@ -50,7 +50,8 @@ function calculateRecordCosts(data: any) {
 
 // --- SAVE LOGIC ---
 export async function saveConsumptionRecord(data: any) {
-  const { appliance, category, unit, period, provider } = data;
+  // MODIFIED: Idinagdag ang 'room' sa pag-destructure mula sa pinapásang data payload
+  const { appliance, category, room, unit, period, provider } = data;
   const { dailyKwh, dailyCost, monthlyCost, numericValue, numericHours, numericQty, numericRate } = calculateRecordCosts(data);
 
   try {
@@ -70,6 +71,7 @@ export async function saveConsumptionRecord(data: any) {
         user_id: userId, // Siguradong pasok na ito sa RLS policy mo
         appliance: appliance,
         category: category,
+        room: room || 'General', // MODIFIED: Isinama ang room column kasama ang 'General' bilang safe default fallback
         unit: unit,
         period: period || 'Daily',
         value: numericValue,
@@ -115,6 +117,7 @@ export async function deleteConsumptionRecord(id: string) {
 
 // --- HISTORY LIST LOGIC (REAL-TIME) ---
 export function getConsumptionHistory(callback: (data: any[]) => void) {
+  let isMounted = true;
   let subscription: any = null;
 
   const fetchData = async () => {
@@ -122,7 +125,7 @@ export function getConsumptionHistory(callback: (data: any[]) => void) {
       const user = await getAuthenticatedUser();
       const userId = user?.id;
       if (!userId || !isValidUUID(userId)) {
-        callback([]);
+        if (isMounted) callback([]);
         return;
       }
 
@@ -134,44 +137,47 @@ export function getConsumptionHistory(callback: (data: any[]) => void) {
 
       if (error) {
         console.error('Supabase history fetch error:', error);
-        callback([]);
+        if (isMounted) callback([]);
         return;
       }
 
-      callback(data || []);
+      if (isMounted) callback(data || []);
     } catch (error) {
       console.error('Error fetching history:', error);
-      callback([]);
+      if (isMounted) callback([]);
     }
   };
 
   fetchData();
 
-  (async () => {
-    const user = await getAuthenticatedUser();
-    const userId = user?.id;
-    if (!userId) return;
+  getAuthenticatedUser().then((user) => {
+    if (!user?.id || !isMounted) return;
 
+    // FIX: Naka-store sa variable para malinis mamaya
     subscription = supabase
-      .channel(`history_user_${userId}`)
+      .channel(`history_user_${user.id}`)
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
         table: 'energy_logs',
-        filter: `user_id=eq.${userId}` 
+        filter: `user_id=eq.${user.id}` 
       }, () => {
         fetchData();
       })
       .subscribe();
-  })();
+  });
 
   return () => {
-    if (subscription) supabase.removeChannel(subscription);
+    isMounted = false;
+    if (subscription) {
+        supabase.removeChannel(subscription);
+    }
   };
 }
 
 // --- DASHBOARD LOGIC (REAL-TIME) ---
 export function getDashboardData(callback: (data: any) => void) {
+  let isMounted = true;
   let subscription: any = null;
 
   const fetchDashboard = async () => {
@@ -179,7 +185,7 @@ export function getDashboardData(callback: (data: any) => void) {
       const user = await getAuthenticatedUser();
       const userId = user?.id;
       if (!userId || !isValidUUID(userId)) {
-        callback({
+        if (isMounted) callback({
           totalMonthly: 0,
           totalDaily: 0,
           applianceCount: 0,
@@ -207,7 +213,7 @@ export function getDashboardData(callback: (data: any) => void) {
 
       if (error || !logs || logs.length === 0) {
         if (error) console.error('Supabase dashboard fetch error:', error);
-        callback({
+        if (isMounted) callback({
           totalMonthly: 0,
           totalDaily: 0,
           applianceCount: 0,
@@ -230,13 +236,18 @@ export function getDashboardData(callback: (data: any) => void) {
       logs.forEach((item: any) => {
         const { dailyCost, monthlyCost } = calculateRecordCosts(item);
         const categoryName = item.category || 'Others';
-        const name = (item.appliance || item.appliance_name || 'Unknown').trim();
+        
+        // 🛠️ TINAMPOK AT INAYOS: Ginawang lowercase ang key para basahin bilang ISA ang parehong spelling (light, LIGHT, Light)
+        const rawName = (item.appliance || item.appliance_name || 'Unknown').trim();
+        const lowerName = rawName.toLowerCase();
 
         tempMonthly += monthlyCost;
         tempDaily += dailyCost;
 
         categoryTotals[categoryName] = (categoryTotals[categoryName] || 0) + monthlyCost;
-        applianceAggregator[name] = (applianceAggregator[name] || 0) + monthlyCost;
+        
+        // Pinagsasama na natin ang value gamit ang iisang case-insensitive key
+        applianceAggregator[lowerName] = (applianceAggregator[lowerName] || 0) + monthlyCost;
 
         const createdAt = item.created_at ? new Date(item.created_at) : null;
         if (createdAt && createdAt >= pitongArawNaNakaraan) {
@@ -248,24 +259,27 @@ export function getDashboardData(callback: (data: any) => void) {
         }
       });
 
-      const colors = ['#1A442E', '#2D6A4F', '#40916C', '#52B788', '#74C69D'];
+      // 🎨 TINAMPOK AT INAYOS: Pinalawak ang color palette ng high-contrast distinct colors para makita lahat ng categories
+      const colors = ['#1A442E', '#2D6A4F', '#2A6F97', '#014F86', '#4A4E69', '#6D597A', '#B56576', '#E56B6F', '#E07A5F', '#F4A261'];
+      
       const formattedPie = Object.keys(categoryTotals).map((cat, index) => ({
         name: cat,
         population: categoryTotals[cat],
-        color: colors[index % colors.length],
+        color: colors[index % colors.length], // Dynamic cycling para sa unique identifications
         legendFontColor: '#64748B',
         legendFontSize: 12,
       }));
 
       const sortedList = Object.keys(applianceAggregator)
-        .map((name) => ({
-          name: name.charAt(0).toUpperCase() + name.slice(1),
-          cost: applianceAggregator[name],
+        .map((lowerName) => ({
+          // Ibinabalik natin sa Proper Case para malinis at may capital letter pa rin ang label sa graph mo
+          name: lowerName.charAt(0).toUpperCase() + lowerName.slice(1),
+          cost: applianceAggregator[lowerName],
         }))
         .sort((a, b) => b.cost - a.cost)
         .slice(0, 10);
 
-      callback({
+      if (isMounted) callback({
         totalMonthly: tempMonthly,
         totalDaily: tempDaily,
         applianceCount: Object.keys(applianceAggregator).length,
@@ -286,25 +300,27 @@ export function getDashboardData(callback: (data: any) => void) {
 
   fetchDashboard();
 
-  (async () => {
-    const user = await getAuthenticatedUser();
-    const userId = user?.id;
-    if (!userId) return;
+  getAuthenticatedUser().then((user) => {
+    if (!user?.id || !isMounted) return;
 
+    // FIX: Naka-store sa variable para malinis mamaya
     subscription = supabase
-      .channel(`dashboard_user_${userId}`)
+      .channel(`dashboard_user_${user.id}`)
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
         table: 'energy_logs',
-        filter: `user_id=eq.${userId}` 
+        filter: `user_id=eq.${user.id}` 
       }, () => {
         fetchDashboard();
       })
       .subscribe();
-  })();
+  });
 
   return () => {
-    if (subscription) supabase.removeChannel(subscription);
+    isMounted = false;
+    if (subscription) {
+        supabase.removeChannel(subscription);
+    }
   };
 }

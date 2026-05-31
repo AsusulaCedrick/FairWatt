@@ -45,7 +45,7 @@ export default function OtpVerifyScreen() {
       Alert.alert('Success', 'Verified!');
       
       // I-pass ang email sa next screen
-      router.replace({ pathname: '/ResetPasswordScreen', params: { email } });
+      router.replace('/reset-password' as any);
       
     } catch (error: any) {
       Alert.alert('Verification Failed', error.message);
