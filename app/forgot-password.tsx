@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../lib/supabase';
 
@@ -9,36 +9,26 @@ export default function ForgotPasswordScreen() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(0);
+  const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
     if (cooldown > 0) {
       interval = setInterval(() => setCooldown((seconds) => seconds - 1), 1000);
     }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
+    return () => { if (interval) clearInterval(interval); };
   }, [cooldown]);
-
-  const validateEmail = (value: string) => value.trim().length > 0 && EMAIL_REGEX.test(value.trim());
 
   const handleSendRecoveryEmail = async () => {
     const trimmedEmail = email.trim().toLowerCase();
-    setStatusMessage(null);
     setError(null);
 
-    if (!trimmedEmail) {
-      setError('Email is required.');
+    if (!EMAIL_REGEX.test(trimmedEmail)) {
+      setError('Please enter a valid email address.');
       return;
     }
-    if (!validateEmail(trimmedEmail)) {
-      setError('Enter a valid email address.');
-      return;
-    }
-    if (loading || cooldown > 0) return;
 
     setLoading(true);
     try {
@@ -47,12 +37,10 @@ export default function ForgotPasswordScreen() {
       });
 
       if (error) throw error;
-
-      setStatusMessage('Recovery email sent. Check your inbox.');
+      setModalVisible(true);
       setCooldown(45);
     } catch (err: any) {
-      console.error('Recovery request failed:', err);
-      setError('Unable to send recovery email. Please try again later.');
+      setError(err.message || 'Unable to send email. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -69,29 +57,31 @@ export default function ForgotPasswordScreen() {
         keyboardType="email-address"
         autoCapitalize="none"
         value={email}
-        onChangeText={(value) => {
-          setEmail(value);
-          setError(null);
-          setStatusMessage(null);
-        }}
+        onChangeText={setEmail}
       />
 
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
-      {statusMessage ? <Text style={styles.successText}>{statusMessage}</Text> : null}
 
       <TouchableOpacity
         style={[styles.button, (loading || cooldown > 0) ? styles.buttonDisabled : undefined]}
         onPress={handleSendRecoveryEmail}
         disabled={loading || cooldown > 0}
       >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>
-            {cooldown > 0 ? `Resend in ${cooldown}s` : 'Send Recovery Email'}
-          </Text>
-        )}
+        {loading ? <ActivityIndicator color="#fff" /> : 
+         <Text style={styles.buttonText}>{cooldown > 0 ? `Resend in ${cooldown}s` : 'Send Recovery Email'}</Text>}
       </TouchableOpacity>
+
+      <Modal visible={modalVisible} transparent={true} animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Check your email!</Text>
+            <Text style={styles.modalSubtitle}>A password recovery link has been sent to your inbox.</Text>
+            <TouchableOpacity style={styles.button} onPress={() => setModalVisible(false)}>
+              <Text style={styles.buttonText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <TouchableOpacity onPress={() => router.replace('/AuthScreen')}>
         <Text style={styles.backText}>Back to Login</Text>
@@ -105,10 +95,13 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, fontWeight: 'bold', color: '#1A442E', marginBottom: 8, textAlign: 'center' },
   subtitle: { fontSize: 14, color: '#475569', marginBottom: 24, textAlign: 'center' },
   input: { backgroundColor: '#fff', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#D1D5DB', marginBottom: 12 },
-  button: { backgroundColor: '#1A442E', padding: 16, borderRadius: 12, alignItems: 'center', marginBottom: 16 },
+  button: { backgroundColor: '#1A442E', padding: 16, borderRadius: 12, alignItems: 'center' },
   buttonDisabled: { opacity: 0.65 },
   buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
-  backText: { color: '#1A442E', textAlign: 'center', marginTop: 8, textDecorationLine: 'underline' },
+  backText: { color: '#1A442E', textAlign: 'center', marginTop: 16, textDecorationLine: 'underline' },
   errorText: { color: '#9B1C1C', marginBottom: 8, textAlign: 'center' },
-  successText: { color: '#166534', marginBottom: 8, textAlign: 'center' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 24 },
+  modalContent: { backgroundColor: '#fff', padding: 24, borderRadius: 16, alignItems: 'center' },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', color: '#1A442E', marginBottom: 10 },
+  modalSubtitle: { fontSize: 14, color: '#475569', textAlign: 'center', marginBottom: 20 },
 });

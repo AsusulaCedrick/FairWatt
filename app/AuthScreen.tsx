@@ -97,7 +97,8 @@ export default function AuthScreen() {
       <Text style={[styles.title, themeStyles.text]}>{isLogin ? "FairWatt Login" : "Create Account"}</Text>
       <TextInput style={[styles.input, themeStyles.inputContainer, themeStyles.inputText]} placeholder="Email" placeholderTextColor={isDarkMode ? "#aaa" : "#888"} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
       <View style={[styles.passwordWrapper, themeStyles.inputContainer]}>
-        <TextInput style={[styles.passwordInput, themeStyles.inputText]} placeholder="Password" placeholderTextColor={isDarkMode ? "#aaa" : "#888"} value={password} onChangeText={setPassword} secureTextEntry={!showPassword} autoCapitalize="none" />
+        <TextInput style={[styles.passwordInput, themeStyles.inputText]} placeholder="Password" placeholderTextColor={isDarkMode ? 
+          "#aaa" : "#888"} value={password} onChangeText={setPassword} secureTextEntry={!showPassword} autoCapitalize="none" />
         <TouchableOpacity style={styles.eyeButton} onPress={() => setShowPassword(!showPassword)}>
           <Ionicons name={showPassword ? 'eye' : 'eye-off'} size={20} color={isDarkMode ? "#aaa" : "#1A442E"} />
         </TouchableOpacity>
