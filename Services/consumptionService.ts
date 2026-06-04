@@ -1,4 +1,4 @@
-﻿import { supabase } from '../lib/supabase'; 
+import { supabase } from '../lib/supabase'; 
 import { DEV_MODE, mockUser } from '../config/dev';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -118,7 +118,7 @@ export async function deleteConsumptionRecord(id: string) {
 // --- HISTORY LIST LOGIC (REAL-TIME) ---
 export function getConsumptionHistory(callback: (data: any[]) => void) {
   let isMounted = true;
-  let subscription: any = null;
+  let activeChannel: any = null;
 
   const fetchData = async () => {
     try {
@@ -153,9 +153,9 @@ export function getConsumptionHistory(callback: (data: any[]) => void) {
   getAuthenticatedUser().then((user) => {
     if (!user?.id || !isMounted) return;
 
-    // FIX: Naka-store sa variable para malinis mamaya
-    subscription = supabase
-      .channel(`history_user_${user.id}`)
+    const channelName = `history_user_${user.id}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const channel = supabase
+      .channel(channelName)
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
@@ -163,14 +163,16 @@ export function getConsumptionHistory(callback: (data: any[]) => void) {
         filter: `user_id=eq.${user.id}` 
       }, () => {
         fetchData();
-      })
-      .subscribe();
+      });
+
+    activeChannel = channel;
+    channel.subscribe();
   });
 
   return () => {
     isMounted = false;
-    if (subscription) {
-        supabase.removeChannel(subscription);
+    if (activeChannel) {
+        supabase.removeChannel(activeChannel);
     }
   };
 }
@@ -178,7 +180,7 @@ export function getConsumptionHistory(callback: (data: any[]) => void) {
 // --- DASHBOARD LOGIC (REAL-TIME) ---
 export function getDashboardData(callback: (data: any) => void) {
   let isMounted = true;
-  let subscription: any = null;
+  let activeChannel: any = null;
 
   const fetchDashboard = async () => {
     try {
@@ -303,9 +305,9 @@ export function getDashboardData(callback: (data: any) => void) {
   getAuthenticatedUser().then((user) => {
     if (!user?.id || !isMounted) return;
 
-    // FIX: Naka-store sa variable para malinis mamaya
-    subscription = supabase
-      .channel(`dashboard_user_${user.id}`)
+    const channelName = `dashboard_user_${user.id}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const channel = supabase
+      .channel(channelName)
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
@@ -313,14 +315,16 @@ export function getDashboardData(callback: (data: any) => void) {
         filter: `user_id=eq.${user.id}` 
       }, () => {
         fetchDashboard();
-      })
-      .subscribe();
+      });
+
+    activeChannel = channel;
+    channel.subscribe();
   });
 
   return () => {
     isMounted = false;
-    if (subscription) {
-        supabase.removeChannel(subscription);
+    if (activeChannel) {
+        supabase.removeChannel(activeChannel);
     }
   };
 }
