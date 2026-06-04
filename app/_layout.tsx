@@ -1,16 +1,33 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useFonts, Poppins_400Regular, Poppins_500Medium, Poppins_600SemiBold, Poppins_700Bold } from '@expo-google-fonts/poppins';
+import * as SplashScreen from 'expo-splash-screen';
+import { useEffect } from 'react';
 
 import { AuthProvider, useAuth } from '../context/AuthContext';
 
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
+// Keep the splash screen visible while we fetch resources
+SplashScreen.preventAutoHideAsync();
 
-// Ginawa nating hiwalay na component ang RootLayoutContent para ma-access ang useAuth()
 function RootLayoutContent() {
   const { isDarkMode } = useAuth();
+  const [loaded, error] = useFonts({
+    Poppins_400Regular,
+    Poppins_500Medium,
+    Poppins_600SemiBold,
+    Poppins_700Bold,
+  });
+
+  useEffect(() => {
+    if (loaded || error) {
+      SplashScreen.hideAsync();
+    }
+  }, [loaded, error]);
+
+  if (!loaded && !error) {
+    return null;
+  }
 
   return (
     <ThemeProvider value={isDarkMode ? DarkTheme : DefaultTheme}>

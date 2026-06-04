@@ -1,5 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Colors, Fonts, Radius } from '../constants/theme';
+import { useAuth } from '../context/AuthContext';
 
 type ScreenHeaderProps = {
   title: string;
@@ -9,15 +11,28 @@ type ScreenHeaderProps = {
 };
 
 export function ScreenHeader({ title, subtitle, actionLabel, onAction }: ScreenHeaderProps) {
+  const { isDarkMode } = useAuth();
+  const themeColors = isDarkMode ? Colors.dark : Colors.light;
+
   return (
     <View style={styles.container}>
       <View style={styles.textBlock}>
-        <Text style={styles.title}>{title}</Text>
-        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+        <Text style={[styles.title, { color: themeColors.primary }]}>{title}</Text>
+        {subtitle ? (
+          <Text style={[styles.subtitle, { color: themeColors.textSecondary }]}>
+            {subtitle}
+          </Text>
+        ) : null}
       </View>
       {actionLabel && onAction ? (
-        <TouchableOpacity style={styles.actionButton} onPress={onAction} activeOpacity={0.75}>
-          <Text style={styles.actionText}>{actionLabel}</Text>
+        <TouchableOpacity
+          style={[styles.actionButton, { backgroundColor: isDarkMode ? '#334155' : '#E2E8F0' }]}
+          onPress={onAction}
+          activeOpacity={0.75}
+        >
+          <Text style={[styles.actionText, { color: isDarkMode ? '#FFFFFF' : '#1E293B' }]}>
+            {actionLabel}
+          </Text>
         </TouchableOpacity>
       ) : null}
     </View>
@@ -29,30 +44,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 20,
+    marginBottom: 24,
+    alignSelf: 'stretch',
   },
   textBlock: {
     flex: 1,
     paddingRight: 12,
   },
   title: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: '#1A442E',
+    ...Fonts.h1,
+    fontWeight: '700',
   },
   subtitle: {
-    marginTop: 4,
-    fontSize: 14,
-    color: '#475569',
+    marginTop: 6,
+    ...Fonts.body,
   },
   actionButton: {
-    borderRadius: 14,
-    backgroundColor: '#E2E8F0',
+    borderRadius: Radius.button,
     paddingVertical: 10,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
   },
   actionText: {
-    color: '#1E293B',
+    fontSize: 13,
     fontWeight: '700',
   },
 });

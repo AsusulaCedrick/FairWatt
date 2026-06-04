@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { FormOption } from '../constants/formSchema';
+import { Colors, Fonts, Radius } from '../constants/theme';
+import { useAuth } from '../context/AuthContext';
 
 type FormSelectProps = {
   label: string;
@@ -11,25 +13,55 @@ type FormSelectProps = {
 };
 
 export function FormSelect({ label, options, selectedKey, onSelect, error }: FormSelectProps) {
+  const { isDarkMode } = useAuth();
+  const themeColors = isDarkMode ? Colors.dark : Colors.light;
+
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, { color: themeColors.text }]}>{label}</Text>
       <View style={styles.chipRow}>
-        {options.map((option) => (
-          <TouchableOpacity
-            key={option.key}
-            style={[styles.chip, selectedKey === option.key && styles.selectedChip]}
-            onPress={() => onSelect(option.key)}
-            activeOpacity={0.75}
-          >
-            <Text style={[styles.chipText, selectedKey === option.key && styles.selectedText]}>
-              {option.label}
-            </Text>
-            {option.description ? <Text style={styles.optionDescription}>{option.description}</Text> : null}
-          </TouchableOpacity>
-        ))}
+        {options.map((option) => {
+          const isSelected = selectedKey === option.key;
+          return (
+            <TouchableOpacity
+              key={option.key}
+              style={[
+                styles.chip,
+                {
+                  backgroundColor: isSelected
+                    ? (isDarkMode ? '#1B3A2E' : themeColors.primaryLight)
+                    : themeColors.card,
+                  borderColor: isSelected ? themeColors.primary : themeColors.border,
+                },
+              ]}
+              onPress={() => onSelect(option.key)}
+              activeOpacity={0.75}
+            >
+              <Text
+                style={[
+                  styles.chipText,
+                  {
+                    color: isSelected ? (isDarkMode ? '#81C784' : themeColors.primary) : themeColors.text,
+                    fontFamily: isSelected ? 'Poppins_600SemiBold' : 'Poppins_500Medium',
+                  },
+                ]}
+              >
+                {option.label}
+              </Text>
+              {option.description ? (
+                <Text style={[styles.optionDescription, { color: themeColors.textSecondary }]}>
+                  {option.description}
+                </Text>
+              ) : null}
+            </TouchableOpacity>
+          );
+        })}
       </View>
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+      {error ? (
+        <Text style={[styles.errorText, { color: themeColors.error }]}>
+          {error}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -37,13 +69,14 @@ export function FormSelect({ label, options, selectedKey, onSelect, error }: For
 const styles = StyleSheet.create({
   container: {
     marginBottom: 18,
+    alignSelf: 'stretch',
   },
   label: {
-    fontSize: 12,
+    ...Fonts.caption,
     fontWeight: '700',
-    color: '#334155',
     marginBottom: 10,
     textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   chipRow: {
     flexDirection: 'row',
@@ -52,34 +85,23 @@ const styles = StyleSheet.create({
   },
   chip: {
     paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 16,
+    borderRadius: Radius.button,
+    borderWidth: 1.5,
     minWidth: 100,
     margin: 6,
-  },
-  selectedChip: {
-    backgroundColor: '#E0F2FE',
-    borderColor: '#0EA5E9',
+    flexGrow: 1, // Full responsive layout wrapping
   },
   chipText: {
     fontSize: 14,
-    color: '#0F172A',
-    fontWeight: '600',
-  },
-  selectedText: {
-    color: '#0C4A6E',
   },
   optionDescription: {
     marginTop: 4,
     fontSize: 11,
-    color: '#64748B',
   },
   errorText: {
-    color: '#B91C1C',
-    marginTop: 10,
-    fontSize: 12,
+    ...Fonts.caption,
+    fontWeight: '500',
+    marginTop: 8,
   },
 });

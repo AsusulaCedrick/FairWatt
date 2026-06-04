@@ -1,53 +1,74 @@
-/**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
- */
-
 import { Platform } from 'react-native';
-
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
 
 export const Colors = {
   light: {
-    text: '#11181C',
-    background: '#fff',
-    tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
+    primary: '#1B5E20',
+    primaryLight: '#E8F5E9',
+    text: '#263238',
+    textSecondary: '#607D8B',
+    background: '#FFFFFF',
+    border: '#E0E0E0',
+    success: '#43A047',
+    error: '#E53935',
+    warning: '#FFB300',
+    info: '#2196F3',
+    tint: '#1B5E20',
+    icon: '#607D8B',
+    tabIconDefault: '#607D8B',
+    tabIconSelected: '#1B5E20',
+    surface: '#F5F7FA',
+    card: '#FFFFFF',
   },
   dark: {
-    text: '#ECEDEE',
-    background: '#151718',
-    tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
+    primary: '#81C784',
+    primaryLight: '#1B5E20',
+    text: '#FFFFFF',
+    textSecondary: '#90A4AE',
+    background: '#121212',
+    border: '#37474F',
+    success: '#66BB6A',
+    error: '#EF5350',
+    warning: '#FFCA28',
+    info: '#4FC3F7',
+    tint: '#FFFFFF',
+    icon: '#90A4AE',
+    tabIconDefault: '#90A4AE',
+    tabIconSelected: '#FFFFFF',
+    surface: '#121212',
+    card: '#1E1E1E',
   },
 };
 
-export const Fonts = Platform.select({
-  ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: 'ui-monospace',
+export const Radius = {
+  card: 24,
+  button: 12,
+  input: 12,
+  modal: 24,
+};
+
+export const Fonts = {
+  h1: {
+    fontSize: 24,
+    fontFamily: 'Poppins_600SemiBold',
   },
-  default: {
-    sans: 'normal',
-    serif: 'serif',
-    rounded: 'normal',
-    mono: 'monospace',
+  h2: {
+    fontSize: 20,
+    fontFamily: 'Poppins_600SemiBold',
   },
-  web: {
-    sans: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-    serif: "Georgia, 'Times New Roman', serif",
-    rounded: "'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
-    mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+  h3: {
+    fontSize: 18,
+    fontFamily: 'Poppins_500Medium',
   },
-});
+  body: {
+    fontSize: 14,
+    fontFamily: 'Poppins_400Regular',
+  },
+  caption: {
+    fontSize: 12,
+    fontFamily: 'Poppins_400Regular',
+  },
+  button: {
+    fontSize: 14,
+    fontFamily: 'Poppins_500Medium',
+  },
+};
