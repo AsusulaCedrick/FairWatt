@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,6 @@ import {
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
-  Modal,
   ScrollView,
   TouchableWithoutFeedback,
 } from 'react-native';
@@ -14,13 +13,18 @@ import { getTenantPredictionAndTips } from '../../Services/aiService';
 import { useRouter } from 'expo-router';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { KeyValueCard } from '../../components/KeyValueCard';
-import { PrimaryButton } from '../../components/PrimaryButton';
+import { Button } from '../../components/ui/Button';
+import { Modal } from '../../components/ui/Modal';
+import { ConfirmationModal } from '../../components/ui/ConfirmationModal';
 import { useAuth } from '../../context/AuthContext';
-import { getConsumptionHistory } from '../../Services/consumptionService'; // Inalis ang deleteConsumptionRecord import
+import { getConsumptionHistory } from '../../Services/consumptionService';
+import { Colors, Fonts, Radius } from '../../constants/theme';
 
 export default function HistoryScreen() {
   const { user, isLoading, isDarkMode } = useAuth();
   const router = useRouter();
+  const themeColors = isDarkMode ? Colors.dark : Colors.light;
+
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
@@ -28,6 +32,7 @@ export default function HistoryScreen() {
   const [aiResponse, setAiResponse] = useState<string>('');
   const [aiLoading, setAiLoading] = useState(false);
   const [aiModalVisible, setAiModalVisible] = useState(false);
+  const [showConfirmPredict, setShowConfirmPredict] = useState(false);
 
   const handleFetchAIEngine = async () => {
     setAiLoading(true);
@@ -41,6 +46,15 @@ export default function HistoryScreen() {
     } finally {
       setAiLoading(false);
     }
+  };
+
+  const handlePredictPress = () => {
+    setShowConfirmPredict(true);
+  };
+
+  const handleConfirmPredict = () => {
+    setShowConfirmPredict(false);
+    handleFetchAIEngine();
   };
 
   useEffect(() => {
@@ -81,7 +95,6 @@ export default function HistoryScreen() {
     return 'Unknown date';
   };
 
-  // MODIFIED: Inayos ang data reading field para sa 'Room' upang maging 'General' kapag walang makitang variable mula sa database engine log log entry
   const detailItems = selectedItem
     ? [
         { label: 'Appliance', value: selectedItem.appliance || 'N/A' },
@@ -98,106 +111,118 @@ export default function HistoryScreen() {
     : [];
 
   const renderItem = ({ item }: { item: any }) => (
-    <TouchableOpacity style={[styles.historyCard, { backgroundColor: isDarkMode ? '#1E1E1E' : '#FFFFFF' }]} onPress={() => setSelectedItem(item)}>
+    <TouchableOpacity 
+      style={[styles.historyCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]} 
+      onPress={() => setSelectedItem(item)}
+      activeOpacity={0.8}
+    >
       <View style={styles.cardHeader}>
-        <View>
-          <Text style={[styles.applianceName, { color: isDarkMode ? '#FFFFFF' : '#1E293B' }]}>{item.appliance || 'Unknown'}</Text>
-          <Text style={styles.categoryTag}>{`${item.category || 'Others'} • ${item.period || 'Daily'}`}</Text>
+        <View style={styles.textContainer}>
+          <Text style={[styles.applianceName, { color: themeColors.text }]}>{item.appliance || 'Unknown'}</Text>
+          <Text style={[styles.categoryTag, { color: themeColors.textSecondary }]}>{`${item.category || 'Others'} • ${item.period || 'Daily'}`}</Text>
         </View>
-        <Text style={[styles.statValue, { color: isDarkMode ? '#FFFFFF' : '#1A442E' }]}>₱{Number(item.monthly_cost || 0).toFixed(2)}</Text>
+        <Text style={[styles.statValue, { color: isDarkMode ? '#81C784' : '#1B5E20' }]}>₱{Number(item.monthly_cost || 0).toFixed(2)}</Text>
       </View>
     </TouchableOpacity>
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: isDarkMode ? '#121212' : '#F5F7FA' }]}>
+    <View style={[styles.container, { backgroundColor: themeColors.background }]}>
       <ScreenHeader title="Consumption History" subtitle="Tap a record to inspect details." />
 
       {history && history.length > 0 && (
-        <TouchableOpacity style={styles.aiTriggerButton} onPress={handleFetchAIEngine}>
+        <TouchableOpacity 
+          style={[styles.aiTriggerButton, { backgroundColor: themeColors.primary }]} 
+          onPress={handlePredictPress}
+          activeOpacity={0.8}
+        >
           <Text style={styles.aiButtonText}>✨ Predict Bill & Tips</Text>
         </TouchableOpacity>
       )}
 
       {loading ? (
-        <ActivityIndicator size="large" color="#1A442E" />
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={themeColors.primary} />
+        </View>
       ) : (
         <FlatList
           data={history}
           keyExtractor={(item) => item.id?.toString() || item.created_at?.toString() || item.createdAt?.toString() || Math.random().toString()}
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
-          ListEmptyComponent={<Text style={styles.emptyText}>No records yet.</Text>}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <Text style={[styles.emptyText, { color: themeColors.textSecondary }]}>
+              No records yet.
+            </Text>
+          }
         />
       )}
+
+      {/* --- CONFIRM BILL PREDICTION MODAL --- */}
+      <ConfirmationModal
+        visible={showConfirmPredict}
+        title="Predict bills?"
+        message="Continue bill prediction?"
+        confirmText="Continue"
+        iconName="trending-up"
+        onCancel={() => setShowConfirmPredict(false)}
+        onConfirm={handleConfirmPredict}
+      />
 
       {/* --- AI ASSISTANT ANALYSIS MODAL --- */}
       <Modal
         visible={aiModalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setAiModalVisible(false)}
+        onClose={() => setAiModalVisible(false)}
+        closeOnBackdropPress={true}
+        style={styles.aiModalContent}
       >
-        <TouchableWithoutFeedback onPress={() => setAiModalVisible(false)}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={[styles.modalContent, { backgroundColor: isDarkMode ? '#1E1E1E' : '#FFFFFF', maxHeight: '85%' }]}>
-                <Text style={[styles.modalTitle, { color: isDarkMode ? '#FFFFFF' : '#1A442E' }]}>⚡ FairWatt AI Analysis</Text>
-                <Text style={styles.subTitle}>Module 6: Energy Data Analyst Insights</Text>
-                
-                {aiLoading ? (
-                  <View style={styles.aiLoadingContainer}>
-                    <ActivityIndicator size="large" color="#1A442E" />
-                    <Text style={styles.aiLoadingText}>Kasalukuyang sinusuri ng AI ang iyong appliance usage logs para sa bill prediction...</Text>
-                  </View>
-                ) : (
-                  <ScrollView showsVerticalScrollIndicator={false} style={styles.detailScroll}>
-                    <Text style={[styles.aiMarkdownText, { color: isDarkMode ? '#FFFFFF' : '#334155' }]}>{aiResponse}</Text>
-                  </ScrollView>
-                )}
-
-                <PrimaryButton
-                  title="Close Analysis"
-                  onPress={() => setAiModalVisible(false)}
-                  style={{ backgroundColor: '#1A442E', marginTop: 10 }}
-                />
-              </View>
-            </TouchableWithoutFeedback>
+        <Text style={[styles.modalTitle, { color: themeColors.primary }]}>⚡ FairWatt AI Analysis</Text>
+        <Text style={[styles.subTitle, { color: themeColors.textSecondary }]}>Module 6: Energy Data Analyst Insights</Text>
+        
+        {aiLoading ? (
+          <View style={styles.aiLoadingContainer}>
+            <ActivityIndicator size="large" color={themeColors.primary} />
+            <Text style={[styles.aiLoadingText, { color: themeColors.textSecondary }]}>
+              Kasalukuyang sinusuri ng AI ang iyong appliance usage logs para sa bill prediction...
+            </Text>
           </View>
-        </TouchableWithoutFeedback>
+        ) : (
+          <ScrollView showsVerticalScrollIndicator={true} style={styles.detailScroll}>
+            <Text style={[styles.aiMarkdownText, { color: themeColors.text }]}>{aiResponse}</Text>
+          </ScrollView>
+        )}
+
+        <Button
+          title="Close Analysis"
+          onPress={() => setAiModalVisible(false)}
+          variant="primary"
+          style={{ marginTop: 10 }}
+        />
       </Modal>
 
-      {/* --- RECORD DETAILS MODAL (BINAGO: Ginawang malinis na Read-Only Interface) --- */}
+      {/* --- RECORD DETAILS MODAL --- */}
       <Modal
         visible={Boolean(selectedItem)}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setSelectedItem(null)}
+        onClose={() => setSelectedItem(null)}
+        closeOnBackdropPress={true}
+        style={styles.detailsModalContent}
       >
-        <TouchableWithoutFeedback onPress={() => setSelectedItem(null)}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={[styles.modalContent, { backgroundColor: isDarkMode ? '#1E1E1E' : '#FFFFFF' }]}>
-                <Text style={[styles.modalTitle, { color: isDarkMode ? '#FFFFFF' : '#1A442E' }]}>Record Details</Text>
-                <Text style={styles.subTitle}>{formatDate(selectedItem?.created_at || selectedItem?.createdAt)}</Text>
-                
-                <ScrollView showsVerticalScrollIndicator={false} style={styles.detailScroll}>
-                  <KeyValueCard items={detailItems} />
-                </ScrollView>
-                
-                {/* BINAGO: Pinalitan ang mapanganib na "Delete Record" button ng ligtas na "Close" handler para sa view-only requirement */}
-                <PrimaryButton
-                  title="Close Details"
-                  onPress={() => setSelectedItem(null)}
-                  style={{ backgroundColor: '#1A442E' }}
-                />
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
+        <Text style={[styles.modalTitle, { color: themeColors.primary }]}>Record Details</Text>
+        <Text style={[styles.subTitle, { color: themeColors.textSecondary }]}>
+          {formatDate(selectedItem?.created_at || selectedItem?.createdAt)}
+        </Text>
+        
+        <ScrollView showsVerticalScrollIndicator={false} style={styles.detailScroll}>
+          <KeyValueCard items={detailItems} />
+        </ScrollView>
+        
+        <Button
+          title="Close Details"
+          onPress={() => setSelectedItem(null)}
+          variant="primary"
+        />
       </Modal>
-
-      {/* ❌ Tinanggal na natin ang buong ConfirmModal ng Deletion para hindi na mag-trigger o mag-occupy ng space */}
     </View>
   );
 }
@@ -205,7 +230,6 @@ export default function HistoryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F7FA',
     paddingHorizontal: 20,
     paddingTop: 50,
   },
@@ -213,79 +237,72 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
   },
   historyCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 18,
-    marginBottom: 14,
-    elevation: 2,
+    borderRadius: Radius.button + 6,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1.5,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOpacity: 0.01,
+    shadowRadius: 4,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  textContainer: {
+    flex: 1,
+    paddingRight: 10,
+  },
   applianceName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1E293B',
+    ...Fonts.body,
+    fontWeight: '700',
   },
   categoryTag: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: 6,
+    ...Fonts.caption,
+    marginTop: 4,
   },
   statValue: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    ...Fonts.body,
+    fontWeight: '700',
   },
   emptyText: {
     textAlign: 'center',
     marginTop: 50,
-    color: '#94A3B8',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 22,
-    maxHeight: '80%',
+    ...Fonts.body,
+    fontStyle: 'italic',
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1A442E',
+    ...Fonts.h2,
+    fontWeight: '700',
     marginBottom: 6,
   },
   subTitle: {
-    fontSize: 13,
-    color: '#64748B',
-    marginBottom: 18,
+    ...Fonts.caption,
+    fontWeight: '600',
+    marginBottom: 16,
   },
   detailScroll: {
-    marginBottom: 18,
+    marginBottom: 16,
+    maxHeight: 350,
   },
   aiTriggerButton: {
-    backgroundColor: '#1A442E',
-    borderRadius: 14,
+    borderRadius: Radius.button,
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
-    elevation: 3,
+    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.05,
     shadowRadius: 4,
   },
   aiButtonText: {
     color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: 'bold',
+    ...Fonts.button,
+    fontWeight: '700',
   },
   aiLoadingContainer: {
     paddingVertical: 40,
@@ -294,16 +311,27 @@ const styles = StyleSheet.create({
   },
   aiLoadingText: {
     marginTop: 16,
-    fontSize: 14,
-    color: '#64748B',
+    ...Fonts.body,
     textAlign: 'center',
     lineHeight: 20,
     paddingHorizontal: 10,
   },
   aiMarkdownText: {
-    fontSize: 14,
-    color: '#334155',
+    ...Fonts.body,
     lineHeight: 22,
     textAlign: 'left',
+  },
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  aiModalContent: {
+    maxWidth: 420,
+    width: '95%',
+  },
+  detailsModalContent: {
+    maxWidth: 400,
+    width: '90%',
   },
 });

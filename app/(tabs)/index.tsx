@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   Text,
   View,
@@ -6,7 +6,6 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   ActivityIndicator,
   TouchableOpacity,
 } from 'react-native';
@@ -15,9 +14,13 @@ import { useAuth } from '../../context/AuthContext';
 import { saveConsumptionRecord } from '../../Services/consumptionService';
 import { FormField } from '../../components/FormField';
 import { FormSelect } from '../../components/FormSelect';
-import { PrimaryButton } from '../../components/PrimaryButton';
-import { ConfirmModal } from '../../components/ConfirmModal';
 import { ScreenHeader } from '../../components/ScreenHeader';
+import { Button } from '../../components/ui/Button';
+import { ConfirmationModal } from '../../components/ui/ConfirmationModal';
+import { SuccessModal } from '../../components/ui/SuccessModal';
+import { ErrorModal } from '../../components/ui/ErrorModal';
+import { Colors, Fonts, Radius } from '../../constants/theme';
+import { Spacing } from '../../constants/Spacing';
 import {
   formFields,
   FormFieldConfig,
@@ -40,12 +43,20 @@ const defaultRecord = {
 export default function HomeScreen() {
   const { user, isLoading, isDarkMode } = useAuth();
   const router = useRouter();
+  const themeColors = isDarkMode ? Colors.dark : Colors.light;
+
   const [formValues, setFormValues] = useState(defaultRecord);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [result, setResult] = useState({ daily: 0, monthly: 0 });
   const [showResult, setShowResult] = useState(false);
-  const [modalType, setModalType] = useState<'save' | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Modals state
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -55,8 +66,8 @@ export default function HomeScreen() {
 
   if (isLoading) {
     return (
-      <View style={[styles.centeredLoading, { backgroundColor: isDarkMode ? '#121212' : '#F5F7FA' }]}>
-        <ActivityIndicator size="large" color={isDarkMode ? '#FFFFFF' : '#1A442E'} />
+      <View style={[styles.centeredLoading, { backgroundColor: themeColors.background }]}>
+        <ActivityIndicator size="large" color={themeColors.primary} />
       </View>
     );
   }
@@ -97,22 +108,27 @@ export default function HomeScreen() {
     setShowResult(false);
   };
 
-  const handleSave = async () => {
+  const handleSavePress = () => {
     const validationErrors = validateForm(formValues);
     setErrors(validationErrors);
 
     if (Object.keys(validationErrors).length > 0) {
-      Alert.alert('Validation Error', 'Please correct the highlighted fields before saving.');
+      setErrorMessage('Please correct the highlighted fields before saving.');
+      setShowErrorModal(true);
       return;
     }
 
+    setShowConfirmModal(true);
+  };
+
+  const handleSave = async () => {
+    setShowConfirmModal(false);
     setSaving(true);
     try {
-      // ✅ MATYAGANG INAYOS: Explicitly na nating ipinapasa ang room property kasama ang form fields
       const { success, dailyCost, monthlyCost } = await saveConsumptionRecord({
         appliance: formValues.appliance,
         category: formValues.category,
-        room: formValues.room, // 👈 Narito na, ligtas at 100% dynamic na ipapasa sa consumptionService mo!
+        room: formValues.room, 
         unit: formValues.unit,
         period: formValues.period,
         value: formValues.value,
@@ -128,14 +144,15 @@ export default function HomeScreen() {
 
         setResult({ daily: safeDaily, monthly: safeMonthly });
         setShowResult(true);
-        Alert.alert('Saved', `Monthly estimated cost: ₱${safeMonthly.toFixed(2)}`);
+        setSuccessMessage(`Monthly estimated cost: ₱${safeMonthly.toFixed(2)}`);
+        setShowSuccessModal(true);
         resetForm();
       }
     } catch (error) {
-      Alert.alert('Save Failed', 'Unable to save record. Check your network or credentials.');
+      setErrorMessage('Unable to save record. Check your network or credentials.');
+      setShowErrorModal(true);
     } finally {
       setSaving(false);
-      setModalType(null);
     }
   };
 
@@ -175,24 +192,24 @@ export default function HomeScreen() {
       return (
         <View key={field.key} style={styles.fieldContainer}>
           <View style={styles.stepperHeader}>
-            <Text style={[styles.fieldLabel, { color: isDarkMode ? '#CBD5E1' : '#334155' }]}>{field.label}</Text>
-            {errors[field.key] ? <Text style={styles.errorText}>{errors[field.key]}</Text> : null}
+            <Text style={[styles.fieldLabel, { color: themeColors.text }]}>{field.label}</Text>
+            {errors[field.key] ? <Text style={[styles.errorText, { color: themeColors.error }]}>{errors[field.key]}</Text> : null}
           </View>
-          <View style={[styles.stepperRow, { backgroundColor: isDarkMode ? '#2D3748' : '#F8FAFC', borderColor: isDarkMode ? '#4A5568' : '#CBD5E1' }]}>
+          <View style={[styles.stepperRow, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
             <TouchableOpacity
-              style={[styles.stepperButton, { backgroundColor: isDarkMode ? '#4A5568' : '#FFFFFF', borderColor: isDarkMode ? '#718096' : '#E2E8F0' }]}
+              style={[styles.stepperButton, { backgroundColor: isDarkMode ? '#334155' : '#FFFFFF', borderColor: themeColors.border }]}
               onPress={() => updateField('quantity', Math.max(field.min ?? 1, formValues.quantity - 1))}
               activeOpacity={0.75}
             >
-              <Text style={[styles.stepperSymbol, { color: isDarkMode ? '#FFFFFF' : '#0F172A' }]}>-</Text>
+              <Text style={[styles.stepperSymbol, { color: themeColors.text }]}>-</Text>
             </TouchableOpacity>
-            <Text style={[styles.stepperValue, { color: isDarkMode ? '#FFFFFF' : '#0F172A' }]}>{formValues.quantity}</Text>
+            <Text style={[styles.stepperValue, { color: themeColors.text }]}>{formValues.quantity}</Text>
             <TouchableOpacity
-              style={[styles.stepperButton, { backgroundColor: isDarkMode ? '#4A5568' : '#FFFFFF', borderColor: isDarkMode ? '#718096' : '#E2E8F0' }]}
+              style={[styles.stepperButton, { backgroundColor: isDarkMode ? '#334155' : '#FFFFFF', borderColor: themeColors.border }]}
               onPress={() => updateField('quantity', Math.min(field.max ?? 99, formValues.quantity + 1))}
               activeOpacity={0.75}
             >
-              <Text style={[styles.stepperSymbol, { color: isDarkMode ? '#FFFFFF' : '#0F172A' }]}>+</Text>
+              <Text style={[styles.stepperSymbol, { color: themeColors.text }]}>+</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -223,19 +240,19 @@ export default function HomeScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: isDarkMode ? '#121212' : '#F5F7FA' }]}
+      style={[styles.container, { backgroundColor: themeColors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <ScreenHeader
           title="FairWatt"
           subtitle="A Personal Electric Sub-Meter Tracker."
         />
 
-        <View style={[styles.card, { backgroundColor: isDarkMode ? '#1E1E1E' : '#FFFFFF' }]}>
+        <View style={[styles.card, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
           {fieldSections.map((section) => (
             <View key={section.title} style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: isDarkMode ? '#FFFFFF' : '#0F172A' }]}>{section.title}</Text>
+              <Text style={[styles.sectionTitle, { color: themeColors.primary }]}>{section.title}</Text>
               {section.keys
                 .map((key) => formFields.find((field) => field.key === key))
                 .filter(Boolean)
@@ -244,33 +261,51 @@ export default function HomeScreen() {
           ))}
 
           {showResult ? (
-            <View style={[styles.resultPreview, { backgroundColor: isDarkMode ? '#1E3A8A' : '#E0F2FE' }]}>
+            <View style={[styles.resultPreview, { backgroundColor: isDarkMode ? '#1E293B' : '#E8F5E9', borderColor: themeColors.primary }]}>
               <View style={styles.resultBox}>
-                <Text style={[styles.resultLabel, { color: isDarkMode ? '#93C5FD' : '#334155' }]}>Daily Share</Text>
-                <Text style={[styles.resultValue, { color: isDarkMode ? '#FFFFFF' : '#0F172A' }]}>₱{result.daily.toFixed(2)}</Text>
+                <Text style={[styles.resultLabel, { color: themeColors.textSecondary }]}>Daily Share</Text>
+                <Text style={[styles.resultValue, { color: themeColors.text }]}>₱{result.daily.toFixed(2)}</Text>
               </View>
-              <View style={[styles.resultBox, styles.monthlyBox, { borderColor: isDarkMode ? '#3B82F6' : '#B6E0FE' }]}>
-                <Text style={[styles.resultLabel, { color: isDarkMode ? '#93C5FD' : '#334155' }]}>Monthly Share</Text>
-                <Text style={[styles.resultValue, { color: isDarkMode ? '#FFFFFF' : '#0F172A' }]}>₱{result.monthly.toFixed(2)}</Text>
+              <View style={[styles.resultBox, styles.monthlyBox, { borderColor: themeColors.border }]}>
+                <Text style={[styles.resultLabel, { color: themeColors.textSecondary }]}>Monthly Share</Text>
+                <Text style={[styles.resultValue, { color: themeColors.text }]}>₱{result.monthly.toFixed(2)}</Text>
               </View>
             </View>
           ) : null}
 
-          <PrimaryButton
+          <Button
             title={saving ? 'Saving…' : 'Calculate & Save'}
-            onPress={() => setModalType('save')}
+            onPress={handleSavePress}
             disabled={saving}
           />
         </View>
       </ScrollView>
 
-      <ConfirmModal
-        visible={modalType === 'save'}
-        title="Save Consumption Record"
-        message="Do you want to save this appliance usage record?"
-        onCancel={() => setModalType(null)}
-        onConfirm={handleSave}
+      {/* --- CONFIRMATION MODAL --- */}
+      <ConfirmationModal
+        visible={showConfirmModal}
+        title="Save application usage?"
+        message="Do you want to save this application usage record?"
         confirmText="Save"
+        iconName="save"
+        onCancel={() => setShowConfirmModal(false)}
+        onConfirm={handleSave}
+      />
+
+      {/* --- SUCCESS MODAL --- */}
+      <SuccessModal
+        visible={showSuccessModal}
+        title="Success!"
+        message={successMessage}
+        onConfirm={() => setShowSuccessModal(false)}
+      />
+
+      {/* --- ERROR MODAL --- */}
+      <ErrorModal
+        visible={showErrorModal}
+        title="Validation Error"
+        message={errorMessage}
+        onConfirm={() => setShowErrorModal(false)}
       />
     </KeyboardAvoidingView>
   );
@@ -279,7 +314,6 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F7FA',
   },
   scrollContent: {
     padding: 20,
@@ -287,66 +321,62 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
+    borderRadius: Radius.card,
+    borderWidth: 1.5,
     padding: 22,
-    elevation: 4,
     shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 20,
+    shadowOpacity: 0.03,
+    shadowRadius: 15,
     shadowOffset: { width: 0, height: 6 },
+    elevation: 2,
   },
   section: {
     marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 16,
-    color: '#0F172A',
+    ...Fonts.h3,
     fontWeight: '700',
     marginBottom: 14,
   },
   resultPreview: {
     marginTop: 10,
     marginBottom: 24,
-    borderRadius: 20,
+    borderRadius: Radius.input,
     overflow: 'hidden',
     flexDirection: 'row',
-    backgroundColor: '#E0F2FE',
+    borderWidth: 1.5,
   },
   resultBox: {
     flex: 1,
     padding: 18,
   },
   monthlyBox: {
-    borderLeftWidth: 1,
-    borderColor: '#B6E0FE',
+    borderLeftWidth: 1.5,
   },
   centeredLoading: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F5F7FA',
   },
   resultLabel: {
-    fontSize: 12,
+    ...Fonts.caption,
     fontWeight: '700',
-    color: '#334155',
     marginBottom: 6,
     textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   resultValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#0F172A',
+    ...Fonts.h1,
+    fontWeight: '700',
   },
   fieldContainer: {
     marginBottom: 16,
   },
   fieldLabel: {
-    fontSize: 12,
-    color: '#334155',
+    ...Fonts.caption,
     fontWeight: '700',
     textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   stepperHeader: {
     flexDirection: 'row',
@@ -358,34 +388,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 16,
+    borderWidth: 1.5,
+    borderRadius: Radius.input,
     padding: 10,
+    height: 60,
   },
   stepperButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    width: 40,
+    height: 40,
+    borderRadius: Radius.button - 4,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
   },
   stepperSymbol: {
     fontSize: 20,
-    color: '#0F172A',
     fontWeight: '700',
   },
   stepperValue: {
-    fontSize: 18,
-    color: '#0F172A',
+    ...Fonts.h3,
     fontWeight: '700',
   },
   errorText: {
-    color: '#B91C1C',
-    fontSize: 12,
+    ...Fonts.caption,
   },
 });

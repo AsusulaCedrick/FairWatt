@@ -12,6 +12,8 @@ import { ScreenHeader } from '../../components/ScreenHeader';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { getDashboardData } from "../../Services/consumptionService";
+import { Colors, Fonts, Radius } from '../../constants/theme';
+import { Spacing } from '../../constants/Spacing';
 
 interface PieData {
   name: string;
@@ -33,6 +35,8 @@ const screenWidth = Dimensions.get("window").width;
 export default function DashboardScreen() {
   const { user, isLoading, isDarkMode } = useAuth();
   const router = useRouter();
+  const themeColors = isDarkMode ? Colors.dark : Colors.light;
+
   const [loading, setLoading] = useState(true);
   const [totalMonthly, setTotalMonthly] = useState(0);
   const [totalDaily, setTotalDaily] = useState(0);
@@ -49,12 +53,12 @@ export default function DashboardScreen() {
   });
 
   const chartConfig = {
-    backgroundGradientFrom: isDarkMode ? "#1E1E1E" : "#FFF",
-    backgroundGradientTo: isDarkMode ? "#1E1E1E" : "#FFF",
-    color: (opacity = 1) => isDarkMode ? `rgba(255, 255, 255, ${opacity})` : `rgba(26, 68, 46, ${opacity})`,
-    labelColor: (opacity = 1) => isDarkMode ? `rgba(255, 255, 255, ${opacity})` : `rgba(100, 116, 139, ${opacity})`,
+    backgroundGradientFrom: themeColors.card,
+    backgroundGradientTo: themeColors.card,
+    color: (opacity = 1) => isDarkMode ? `rgba(129, 199, 132, ${opacity})` : `rgba(27, 94, 32, ${opacity})`,
+    labelColor: (opacity = 1) => themeColors.textSecondary,
     decimalPlaces: 0,
-    propsForDots: { r: "4", strokeWidth: "2", stroke: isDarkMode ? "#fff" : "#1A442E" }
+    propsForDots: { r: "4", strokeWidth: "2", stroke: isDarkMode ? "#81C784" : "#1B5E20" }
   };
 
   useEffect(() => {
@@ -71,32 +75,48 @@ export default function DashboardScreen() {
       setTotalMonthly(data.totalMonthly);
       setTotalDaily(data.totalDaily);
       setApplianceCount(data.applianceCount);
-      setPieData(data.pieData);
+      // Clean up pie data color tags to match theme colors dynamically
+      const themedPie = (data.pieData || []).map((item: any, index: number) => {
+        const defaultColors = ['#1B5E20', '#43A047', '#FFB300', '#2196F3', '#E53935', '#9C27B0'];
+        return {
+          ...item,
+          color: item.color || defaultColors[index % defaultColors.length],
+          legendFontColor: themeColors.text,
+          legendFontSize: 12
+        };
+      });
+      setPieData(themedPie);
       setTopAppliances(data.topTenData);
       setLineData(data.trendData);
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [user, isLoading, router]);
+  }, [user, isLoading, router, isDarkMode]);
 
   if (loading) {
     return (
-      <View style={[styles.center, { backgroundColor: isDarkMode ? "#121212" : "#F5F7FA" }]}>
-        <ActivityIndicator size="large" color={isDarkMode ? "#fff" : "#1A442E"} />
+      <View style={[styles.center, { backgroundColor: themeColors.background }]}>
+        <ActivityIndicator size="large" color={themeColors.primary} />
       </View>
     );
   }
 
+  const isTrendDataEmpty = !lineData.datasets[0]?.data.length;
+
   return (
-    <ScrollView style={[styles.container, { backgroundColor: isDarkMode ? "#121212" : "#F5F7FA" }]}>
+    <ScrollView 
+      style={[styles.container, { backgroundColor: themeColors.background }]}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
       <ScreenHeader
         title="Energy Dashboard"
         subtitle="Live insights from appliance consumption and monthly cost trends."
       />
 
       {/* SUMMARY CARD */}
-      <View style={styles.mainCard}>
+      <View style={[styles.mainCard, { backgroundColor: themeColors.primary }]}>
         <Text style={styles.labelWhite}>ESTIMATED MONTHLY BILL</Text>
         <Text style={styles.valueWhite}>
           ₱ {totalMonthly.toLocaleString(undefined, {minimumFractionDigits: 2})}
@@ -104,148 +124,174 @@ export default function DashboardScreen() {
       </View>
 
       <View style={styles.row}>
-        <View style={[styles.halfCard, { backgroundColor: isDarkMode ? "#1E1E1E" : "#FFF" }]}>
-          <Text style={[styles.labelGray, { color: isDarkMode ? "#aaa" : "#64748B" }]}>DAILY COST</Text>
-          <Text style={[styles.valueGreen, { color: isDarkMode ? "#fff" : "#1A442E" }]}>₱ {totalDaily.toFixed(2)}</Text>
+        <View style={[styles.halfCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+          <Text style={[styles.labelGray, { color: themeColors.textSecondary }]}>DAILY COST</Text>
+          <Text style={[styles.valueGreen, { color: themeColors.text }]}>₱ {totalDaily.toFixed(2)}</Text>
         </View>
-        <View style={[styles.halfCard, { backgroundColor: isDarkMode ? "#1E1E1E" : "#FFF" }]}>
-          <Text style={[styles.labelGray, { color: isDarkMode ? "#aaa" : "#64748B" }]}>APPLIANCES</Text>
-          <Text style={[styles.valueGreen, { color: isDarkMode ? "#fff" : "#1A442E" }]}>{applianceCount}</Text>
+        <View style={[styles.halfCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+          <Text style={[styles.labelGray, { color: themeColors.textSecondary }]}>APPLIANCES</Text>
+          <Text style={[styles.valueGreen, { color: themeColors.text }]}>{applianceCount}</Text>
         </View>
       </View>
 
       {applianceCount > 0 ? (
         <>
-          <View style={[styles.chartBox, { backgroundColor: isDarkMode ? "#1E1E1E" : "#FFF" }]}>
-            <Text style={[styles.chartTitle, { color: isDarkMode ? "#fff" : "#1A442E" }]}>7-Day Trend</Text>
-            <LineChart
-              data={lineData}
-              width={screenWidth - 60}
-              height={180}
-              chartConfig={chartConfig}
-              bezier
-              style={styles.rounded}
-              fromZero
-              yAxisLabel="₱"
-              yAxisSuffix=""
-            />
-          </View>
+          {!isTrendDataEmpty && (
+            <View style={[styles.chartBox, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+              <Text style={[styles.chartTitle, { color: themeColors.primary }]}>7-Day Trend</Text>
+              <LineChart
+                data={lineData}
+                width={screenWidth - 76}
+                height={180}
+                chartConfig={chartConfig}
+                bezier
+                style={styles.rounded}
+                fromZero
+                yAxisLabel="₱"
+                yAxisSuffix=""
+              />
+            </View>
+          )}
 
-          <View style={[styles.chartBox, { backgroundColor: isDarkMode ? "#1E1E1E" : "#FFF" }]}>
-            <Text style={[styles.chartTitle, { color: isDarkMode ? "#fff" : "#1A442E" }]}>Top 10 Appliances</Text>
-            <BarChart
-              data={topAppliances}
-              width={screenWidth - 60}
-              height={250}
-              chartConfig={chartConfig}
-              yAxisLabel="₱"
-              yAxisSuffix=""
-              fromZero
-              style={styles.rounded}
-              verticalLabelRotation={30}
-            />
-          </View>
+          {topAppliances.labels.length > 0 && (
+            <View style={[styles.chartBox, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+              <Text style={[styles.chartTitle, { color: themeColors.primary }]}>Top Appliances</Text>
+              <BarChart
+                data={topAppliances}
+                width={screenWidth - 76}
+                height={250}
+                chartConfig={chartConfig}
+                yAxisLabel="₱"
+                yAxisSuffix=""
+                fromZero
+                style={styles.rounded}
+                verticalLabelRotation={30}
+              />
+            </View>
+          )}
 
-          <View style={[styles.chartBox, { backgroundColor: isDarkMode ? "#1E1E1E" : "#FFF" }]}>
-            <Text style={[styles.chartTitle, { color: isDarkMode ? "#fff" : "#1A442E" }]}>By Category</Text>
-            <PieChart
-              data={pieData}
-              width={screenWidth - 40}
-              height={180}
-              chartConfig={chartConfig}
-              accessor={"population"}
-              backgroundColor={"transparent"}
-              paddingLeft={"15"}
-              absolute
-            />
-          </View>
+          {pieData.length > 0 && (
+            <View style={[styles.chartBox, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+              <Text style={[styles.chartTitle, { color: themeColors.primary }]}>By Category</Text>
+              <View style={styles.pieContainer}>
+                <PieChart
+                  data={pieData}
+                  width={screenWidth - 40}
+                  height={180}
+                  chartConfig={chartConfig}
+                  accessor={"population"}
+                  backgroundColor={"transparent"}
+                  paddingLeft={"10"}
+                  absolute
+                />
+              </View>
+            </View>
+          )}
         </>
       ) : (
         <View style={styles.emptyBox}>
-          <Text style={[styles.emptyText, { color: isDarkMode ? "#aaa" : "#64748B" }]}>Add history to see energy insights.</Text>
+          <Text style={[styles.emptyText, { color: themeColors.textSecondary }]}>
+            Add history to see energy insights.
+          </Text>
         </View>
       )}
     </ScrollView>
   );
 }
 
-// ❌ Inalis natin dito ang duplicate na 'const chartConfig' para walang variable conflict error ang code mo.
-
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
-    backgroundColor: "#F5F7FA", 
+  },
+  scrollContent: {
     padding: 20, 
-    paddingTop: 50 
+    paddingTop: 50,
+    paddingBottom: 40,
   },
   center: { 
     flex: 1, 
     justifyContent: "center", 
     alignItems: "center",
-    backgroundColor: "#F5F7FA"
   },
   mainCard: { 
-    backgroundColor: "#1A442E", 
-    padding: 20, 
-    borderRadius: 20, 
-    marginBottom: 10 
+    padding: 22, 
+    borderRadius: Radius.card, 
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
+    elevation: 2,
   },
   labelWhite: { 
+    ...Fonts.caption,
+    fontWeight: '700',
     color: "#FFF", 
-    fontSize: 12, 
-    opacity: 0.8 
+    opacity: 0.8,
+    letterSpacing: 0.5,
   },
   valueWhite: { 
     color: "#FFF", 
-    fontSize: 30, 
-    fontWeight: "bold" 
+    ...Fonts.h1,
+    fontSize: 32,
+    fontWeight: "800",
+    marginTop: 6,
   },
   row: { 
-    flex: 1,
     flexDirection: "row", 
     justifyContent: "space-between", 
-    marginBottom: 20 
+    marginBottom: 20,
+    width: '100%',
   },
   halfCard: { 
-    backgroundColor: "#FFF", 
     width: "48%", 
-    padding: 15, 
-    borderRadius: 15, 
-    elevation: 2 
+    padding: 16, 
+    borderRadius: Radius.button + 4, 
+    borderWidth: 1.5,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOpacity: 0.01,
+    shadowRadius: 4,
   },
   labelGray: { 
-    fontSize: 10, 
-    color: "#64748B", 
-    fontWeight: "bold" 
+    ...Fonts.caption,
+    fontWeight: "700",
+    letterSpacing: 0.5,
   },
   valueGreen: { 
-    fontSize: 18, 
-    fontWeight: "bold", 
-    color: "#1A442E" 
+    ...Fonts.h3,
+    fontWeight: "700", 
+    marginTop: 4,
   },
   chartBox: { 
-    backgroundColor: "#FFF", 
-    padding: 15, 
-    borderRadius: 20, 
+    padding: 16, 
+    borderRadius: Radius.card, 
     marginBottom: 20, 
-    elevation: 2 
+    borderWidth: 1.5,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOpacity: 0.01,
+    shadowRadius: 6,
   },
   chartTitle: { 
-    fontSize: 16, 
-    fontWeight: "bold", 
-    color: "#1A442E", 
-    marginBottom: 15 
+    ...Fonts.h3,
+    fontWeight: "700", 
+    marginBottom: 16, 
   },
   rounded: { 
-    borderRadius: 16 
+    borderRadius: Radius.button, 
   },
   emptyBox: { 
     padding: 40, 
-    alignItems: 'center' 
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   emptyText: { 
-    color: '#64748B', 
-    fontSize: 14, 
-    fontStyle: 'italic' 
-  }
+    ...Fonts.body,
+    fontStyle: 'italic',
+  },
+  pieContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: -10,
+  },
 });

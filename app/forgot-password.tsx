@@ -2,28 +2,40 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
-  ActivityIndicator,
   StyleSheet,
   SafeAreaView,
   StatusBar,
+  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import * as Linking from 'expo-linking';
-import EmailSentModal from '../components/EmailSentModal';
+import { Colors, Fonts, Radius } from '../constants/theme';
+import { useAuth } from '../context/AuthContext';
+import { Input } from '../components/ui/Input';
+import { Button } from '../components/ui/Button';
+import { ConfirmationModal } from '../components/ui/ConfirmationModal';
+import { SuccessModal } from '../components/ui/SuccessModal';
+import { ErrorModal } from '../components/ui/ErrorModal';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+  const { isDarkMode } = useAuth();
+  const themeColors = isDarkMode ? Colors.dark : Colors.light;
+
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(0);
-  const [modalVisible, setModalVisible] = useState(false);
+
+  // Modal states
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
@@ -35,16 +47,21 @@ export default function ForgotPasswordScreen() {
     };
   }, [cooldown]);
 
-  const handleSendRecoveryEmail = async () => {
+  const handleSendPress = () => {
     const trimmedEmail = email.trim().toLowerCase();
-    setError(null);
-
     if (!EMAIL_REGEX.test(trimmedEmail)) {
-      setError('Please enter a valid email address.');
+      setErrorMessage('Please enter a valid email address.');
+      setShowErrorModal(true);
       return;
     }
+    setShowConfirmModal(true);
+  };
 
+  const executeSendRecoveryEmail = async () => {
+    setShowConfirmModal(false);
     setLoading(true);
+    const trimmedEmail = email.trim().toLowerCase();
+
     try {
       const redirectUrl = Linking.createURL('reset-password');
       const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
@@ -52,100 +69,108 @@ export default function ForgotPasswordScreen() {
       });
 
       if (error) throw error;
-      setModalVisible(true);
+      setShowSuccessModal(true);
       setCooldown(45);
     } catch (err: any) {
-      setError(err.message || 'Unable to send email. Please try again.');
+      setErrorMessage(err.message || 'Unable to send email. Please try again.');
+      setShowErrorModal(true);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCloseModal = () => {
-    setModalVisible(false);
-    // After closing modal, redirect back to login page
+  const handleCloseSuccessModal = () => {
+    setShowSuccessModal(false);
     router.replace('/AuthScreen');
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" />
-      <View style={styles.container}>
-        {/* Custom Header with Back Chevron */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.replace('/AuthScreen')} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={28} color="#1A442E" />
-          </TouchableOpacity>
-        </View>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: themeColors.background }]}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+      
+      {/* Custom Header with Back Chevron */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.replace('/AuthScreen')} style={styles.backButton}>
+          <Ionicons name="chevron-back" size={28} color={themeColors.primary} />
+        </TouchableOpacity>
+      </View>
 
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={styles.content}>
-          <Text style={styles.title}>Forgot Password</Text>
+          <Text style={[styles.title, { color: themeColors.primary }]}>Forgot Password</Text>
 
           {/* Center Illustration - Envelope with Shield/Lock */}
           <View style={styles.illustrationContainer}>
-            <View style={styles.circleBg}>
-              <Ionicons name="mail" size={64} color="#4CAF50" />
-              <View style={styles.lockOverlay}>
-                <Ionicons name="lock-closed" size={24} color="#1A442E" />
+            <View style={[styles.circleBg, { backgroundColor: isDarkMode ? '#1B3A2E' : '#E8F5E9' }]}>
+              <Ionicons name="mail" size={64} color={isDarkMode ? '#81C784' : '#4CAF50'} />
+              <View style={[styles.lockOverlay, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+                <Ionicons name="lock-closed" size={20} color={themeColors.primary} />
               </View>
             </View>
           </View>
 
-          <Text style={styles.subtitle}>
+          <Text style={[styles.subtitle, { color: themeColors.textSecondary }]}>
             Enter your email address and we'll send you a link to reset your password.
           </Text>
 
           {/* Email Input Field */}
-          <View style={styles.inputContainer}>
-            <Ionicons name="mail-outline" size={20} color="#687076" style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Email address"
-              placeholderTextColor="#687076"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              value={email}
-              onChangeText={setEmail}
-            />
-          </View>
-
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          <Input
+            label="Email address"
+            placeholder="Enter your email"
+            keyboardType="email-address"
+            leftIcon="mail-outline"
+            value={email}
+            onChangeText={setEmail}
+          />
 
           {/* Send Recovery Email Button */}
-          <TouchableOpacity
-            style={[styles.button, (loading || cooldown > 0) ? styles.buttonDisabled : undefined]}
-            onPress={handleSendRecoveryEmail}
+          <Button
+            title={cooldown > 0 ? `Resend in ${cooldown}s` : 'Send Recovery Email'}
+            onPress={handleSendPress}
             disabled={loading || cooldown > 0}
-            activeOpacity={0.8}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>
-                {cooldown > 0 ? `Resend in ${cooldown}s` : 'Send Recovery Email'}
-              </Text>
-            )}
-          </TouchableOpacity>
+            loading={loading}
+            style={styles.button}
+          />
 
           {/* Back to Login Link */}
           <TouchableOpacity onPress={() => router.replace('/AuthScreen')} style={styles.backLinkContainer}>
-            <Text style={styles.backLinkText}>Back to Login</Text>
+            <Text style={[styles.backLinkText, { color: themeColors.primary }]}>Back to Login</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </ScrollView>
 
-      <EmailSentModal visible={modalVisible} onClose={handleCloseModal} />
+      {/* --- CONFIRMATION MODAL --- */}
+      <ConfirmationModal
+        visible={showConfirmModal}
+        title="Send recovery email?"
+        message="Continue recovery process?"
+        confirmText="Continue"
+        iconName="mail-unread"
+        onCancel={() => setShowConfirmModal(false)}
+        onConfirm={executeSendRecoveryEmail}
+      />
+
+      {/* --- SUCCESS MODAL --- */}
+      <SuccessModal
+        visible={showSuccessModal}
+        title="Email Verification Sent"
+        message="We've sent a password reset link to your email."
+        onConfirm={handleCloseSuccessModal}
+      />
+
+      {/* --- ERROR MODAL --- */}
+      <ErrorModal
+        visible={showErrorModal}
+        title="Verification Failed"
+        message={errorMessage}
+        onConfirm={() => setShowErrorModal(false)}
+      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
-    flex: 1,
-    backgroundColor: '#F5F7FA',
-  },
-  container: {
     flex: 1,
   },
   header: {
@@ -157,6 +182,9 @@ const styles = StyleSheet.create({
   backButton: {
     padding: 4,
   },
+  scrollContent: {
+    flexGrow: 1,
+  },
   content: {
     flex: 1,
     paddingHorizontal: 24,
@@ -164,9 +192,8 @@ const styles = StyleSheet.create({
     marginTop: -40, // offset upward slightly for optical balance
   },
   title: {
-    fontSize: 28,
+    ...Fonts.h1,
     fontWeight: '800',
-    color: '#1A442E',
     marginBottom: 24,
     textAlign: 'center',
   },
@@ -175,20 +202,19 @@ const styles = StyleSheet.create({
     marginBottom: 28,
   },
   circleBg: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: '#E8F5E9',
+    width: 130,
+    height: 130,
+    borderRadius: 65,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
   },
   lockOverlay: {
     position: 'absolute',
-    bottom: 30,
-    right: 32,
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
+    bottom: 24,
+    right: 24,
+    borderRadius: 14,
+    borderWidth: 1.5,
     width: 32,
     height: 32,
     justifyContent: 'center',
@@ -200,62 +226,21 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   subtitle: {
-    fontSize: 15,
-    color: '#475569',
+    ...Fonts.body,
     lineHeight: 22,
     textAlign: 'center',
     marginBottom: 32,
     paddingHorizontal: 12,
   },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    paddingHorizontal: 16,
-    height: 56,
-    marginBottom: 16,
-  },
-  inputIcon: {
-    marginRight: 12,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: '#11181C',
-  },
   button: {
-    backgroundColor: '#1A442E',
-    height: 56,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
     marginTop: 8,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: '#ffffff',
-    fontWeight: '700',
-    fontSize: 16,
   },
   backLinkContainer: {
     marginTop: 24,
     alignItems: 'center',
   },
   backLinkText: {
-    color: '#1A442E',
-    fontSize: 16,
+    ...Fonts.body,
     fontWeight: '700',
-  },
-  errorText: {
-    color: '#D32F2F',
-    fontSize: 14,
-    marginBottom: 16,
-    textAlign: 'center',
-    fontWeight: '500',
   },
 });
