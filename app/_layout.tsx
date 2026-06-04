@@ -20,6 +20,10 @@ function RootLayoutContent() {
         
         {/* Main Tenant Login & Registration Screening Section */}
         <Stack.Screen name="AuthScreen" options={{ headerShown: false }} />
+
+        {/* Password Recovery Screens */}
+        <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
+        <Stack.Screen name="reset-password" options={{ headerShown: false }} />
         
         {/* Global Pop-up Overlays */}
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />

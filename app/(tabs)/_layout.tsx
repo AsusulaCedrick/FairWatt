@@ -1,4 +1,4 @@
-﻿import React, { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
 import BottomNavigation from '../../components/BottomNavigation';
@@ -10,12 +10,14 @@ export default function TabLayout() {
   const segments = useSegments();
 
   const isAuthScreen = (segments as string[]).includes('AuthScreen');
+  const isForgotPasswordScreen = (segments as string[]).includes('forgot-password');
+  const isResetPasswordScreen = (segments as string[]).includes('reset-password');
 
   useEffect(() => {
-    if (!isLoading && !user && !isAuthScreen) {
+    if (!isLoading && !user && !isAuthScreen && !isForgotPasswordScreen && !isResetPasswordScreen) {
       router.replace('/AuthScreen');
     }
-  }, [isLoading, user, isAuthScreen, router]);
+  }, [isLoading, user, isAuthScreen, isForgotPasswordScreen, isResetPasswordScreen, router]);
 
   if (isLoading) {
     return (

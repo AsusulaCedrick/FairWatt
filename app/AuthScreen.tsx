@@ -25,11 +25,7 @@ export default function AuthScreen() {
     switchText: { color: isDarkMode ? '#aaa' : '#666' }
   };
 
-  useEffect(() => {
-    if (!isLoading && user) {
-      router.replace('/(tabs)/dashboard');
-    }
-  }, [isLoading, user, router]);
+
 
   const hasNoSpaces = !password.includes(' ') && password.length > 0;
   const isMinLength = password.length >= 8;
@@ -153,7 +149,7 @@ const styles = StyleSheet.create({
   ruleItem: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
   ruleText: { fontSize: 12, marginLeft: 6, fontWeight: '500' },
   matchIndicatorText: { fontSize: 12, fontWeight: '600', marginBottom: 15, paddingLeft: 4 },
-  forgotText: { color: '#800000', textAlign: 'right', marginBottom: 20 },
+  forgotText: { color: '#1A442E', textAlign: 'right', marginBottom: 20 },
   mainButton: { backgroundColor: '#1A442E', padding: 15, borderRadius: 10, alignItems: 'center', marginTop: 5 },
   buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
   switchText: { marginTop: 20, textAlign: 'center' }
