@@ -117,7 +117,6 @@ const styles = StyleSheet.create({
     ...Fonts.caption,
     fontWeight: '700',
     marginBottom: 8,
-    textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   inputContainer: {
@@ -139,6 +138,7 @@ const styles = StyleSheet.create({
   },
   eyeIcon: {
     padding: 4,
+    marginLeft: 8,
   },
   errorText: {
     ...Fonts.caption,

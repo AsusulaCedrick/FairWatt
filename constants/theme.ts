@@ -41,8 +41,8 @@ export const Colors = {
 
 export const Radius = {
   card: 24,
-  button: 12,
-  input: 12,
+  button: 16,
+  input: 16,
   modal: 24,
 };
 

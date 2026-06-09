@@ -2,6 +2,7 @@ import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, ViewStyle, TextStyle } from 'react-native';
 import { Colors, Fonts, Radius } from '../../constants/theme';
 import { useAuth } from '../../context/AuthContext';
+import { Ionicons } from '@expo/vector-icons';
 
 type ButtonVariant = 'primary' | 'secondary' | 'tertiary' | 'destructive';
 
@@ -13,6 +14,9 @@ interface ButtonProps {
   loading?: boolean;
   style?: ViewStyle;
   textStyle?: TextStyle;
+  iconName?: keyof typeof Ionicons.glyphMap;
+  iconSize?: number;
+  iconColor?: string;
 }
 
 export function Button({
@@ -23,6 +27,9 @@ export function Button({
   loading = false,
   style,
   textStyle,
+  iconName,
+  iconSize = 18,
+  iconColor,
 }: ButtonProps) {
   const { isDarkMode } = useAuth();
   const themeColors = isDarkMode ? Colors.dark : Colors.light;
@@ -76,6 +83,8 @@ export function Button({
     }
   };
 
+  const defaultIconColor = iconColor || (variant === 'secondary' ? themeColors.primary : '#FFFFFF');
+
   return (
     <TouchableOpacity
       style={[
@@ -91,16 +100,26 @@ export function Button({
       {loading ? (
         <ActivityIndicator color={variant === 'secondary' ? themeColors.primary : '#FFFFFF'} />
       ) : (
-        <Text
-          style={[
-            styles.baseText,
-            getTextStyles(),
-            disabled && styles.disabledText,
-            textStyle,
-          ]}
-        >
-          {title}
-        </Text>
+        <>
+          {iconName && (
+            <Ionicons
+              name={iconName}
+              size={iconSize}
+              color={disabled ? '#94A3B8' : defaultIconColor}
+              style={styles.buttonIcon}
+            />
+          )}
+          <Text
+            style={[
+              styles.baseText,
+              getTextStyles(),
+              disabled && styles.disabledText,
+              textStyle,
+            ]}
+          >
+            {title}
+          </Text>
+        </>
       )}
     </TouchableOpacity>
   );
@@ -128,5 +147,8 @@ const styles = StyleSheet.create({
   },
   disabledText: {
     color: '#94A3B8',
+  },
+  buttonIcon: {
+    marginRight: 8,
   },
 });

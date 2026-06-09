@@ -115,11 +115,12 @@ export default function ResetPasswordScreen() {
   const renderValidationRule = (isValid: boolean, text: string) => (
     <View style={styles.ruleItem} key={text}>
       <Ionicons
-        name={isValid ? 'checkmark-circle' : 'close-circle'}
-        size={16}
-        color={isValid ? themeColors.success : themeColors.error}
+        name={isValid ? 'checkmark-circle' : 'checkmark-circle-outline'}
+        size={18}
+        color={isValid ? themeColors.success : (isDarkMode ? '#37474F' : '#B0BEC5')}
+        style={styles.ruleIcon}
       />
-      <Text style={[styles.ruleText, { color: isValid ? themeColors.success : themeColors.textSecondary }]}>
+      <Text style={[styles.ruleText, { color: isValid ? themeColors.text : themeColors.textSecondary }]}>
         {text}
       </Text>
     </View>
@@ -146,13 +147,22 @@ export default function ResetPasswordScreen() {
         </View>
 
         <View style={styles.content}>
-          <Text style={[styles.title, { color: themeColors.primary }]}>Reset Password</Text>
-          <Text style={[styles.subtitle, { color: themeColors.textSecondary }]}>Enter your new password below.</Text>
+          {/* Centered FairWatt Logo */}
+          <View style={styles.logoContainer}>
+            <View style={[styles.logoIconBg, { backgroundColor: isDarkMode ? '#1B3A2E' : '#E8F5E9' }]}>
+              <Ionicons name="flash" size={40} color={isDarkMode ? '#81C784' : '#1B5E20'} />
+            </View>
+          </View>
+
+          <Text style={[styles.title, { color: themeColors.text }]}>Reset Password</Text>
+          <Text style={[styles.subtitle, { color: themeColors.textSecondary }]}>
+            Create a new password for your account.{"\n"}Make sure it's strong and secure.
+          </Text>
 
           {/* New Password Input Field */}
           <Input
             label="New Password"
-            placeholder="New password"
+            placeholder="Enter new password"
             secureTextEntry
             leftIcon="lock-closed-outline"
             value={newPassword}
@@ -183,9 +193,11 @@ export default function ResetPasswordScreen() {
           />
 
           {confirmPassword.length > 0 && (
-            <Text style={[styles.matchText, { color: isConfirmMatch ? themeColors.success : themeColors.error }]}>
-              {isConfirmMatch ? '✓ Passwords match' : '✗ Passwords do not match'}
-            </Text>
+            <View style={styles.matchContainer}>
+              <Text style={[styles.matchText, { color: isConfirmMatch ? themeColors.success : themeColors.error }]}>
+                {isConfirmMatch ? '✓ Passwords match' : '✗ Passwords do not match'}
+              </Text>
+            </View>
           )}
 
           {/* Reset Password Button */}
@@ -194,18 +206,41 @@ export default function ResetPasswordScreen() {
             onPress={handleUpdatePress}
             disabled={!isPasswordValid || !isConfirmMatch || loading}
             loading={loading}
+            iconName="lock-closed-outline"
             style={styles.button}
           />
+
+          {/* Divider style */}
+          <View style={styles.dividerRow}>
+            <View style={[styles.dividerLine, { backgroundColor: themeColors.border }]} />
+            <Text style={[styles.dividerText, { color: themeColors.textSecondary }]}>or</Text>
+            <View style={[styles.dividerLine, { backgroundColor: themeColors.border }]} />
+          </View>
+
+          {/* Switching redirect */}
+          <TouchableOpacity 
+            onPress={() => router.replace('/AuthScreen')}
+            style={styles.switchContainer}
+          >
+            <Text style={[styles.switchText, { color: themeColors.textSecondary }]}>
+              Remember your password?{' '}
+              <Text style={{ color: themeColors.primary, fontWeight: '700' }}>
+                Login
+              </Text>
+            </Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
 
       {/* --- CONFIRMATION MODAL --- */}
       <ConfirmationModal
         visible={showConfirmModal}
-        title="Reset password?"
-        message="Continue resetting?"
-        confirmText="Reset"
-        iconName="shield-half"
+        title="Reset Password?"
+        message={`You are about to change your account password.\n\nDo you want to continue?`}
+        confirmText="Continue"
+        cancelText="Cancel"
+        iconName="help-circle-outline"
+        iconColor={themeColors.primary}
         onCancel={() => setShowConfirmModal(false)}
         onConfirm={executeUpdatePassword}
       />
@@ -213,8 +248,8 @@ export default function ResetPasswordScreen() {
       {/* --- SUCCESS MODAL --- */}
       <SuccessModal
         visible={showSuccessModal}
-        title="Password Reset Successful"
-        message="Your password has been updated successfully."
+        title="Password Reset Successful!"
+        message={`Your password has been updated successfully.\n\nYou can now log in using your new password.`}
         confirmText="Go to Login"
         onConfirm={() => {
           setShowSuccessModal(false);
@@ -259,6 +294,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: 40,
   },
+  logoContainer: {
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 20,
+  },
+  logoIconBg: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   title: {
     ...Fonts.h1,
     fontWeight: '800',
@@ -269,6 +316,7 @@ const styles = StyleSheet.create({
     ...Fonts.body,
     textAlign: 'center',
     marginBottom: 32,
+    lineHeight: 22,
   },
   checklistContainer: {
     marginBottom: 20,
@@ -287,19 +335,47 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 6,
   },
+  ruleIcon: {
+    marginRight: 8,
+  },
   ruleText: {
     ...Fonts.caption,
-    marginLeft: 8,
     fontWeight: '500',
+  },
+  matchContainer: {
+    marginTop: -8,
+    marginBottom: 16,
+    paddingLeft: 4,
   },
   matchText: {
     ...Fonts.caption,
     fontWeight: '600',
-    marginBottom: 16,
-    paddingLeft: 4,
+    fontSize: 13,
   },
   button: {
     marginTop: 16,
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 24,
+    width: '100%',
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    marginHorizontal: 12,
+    ...Fonts.body,
+    fontWeight: '500',
+  },
+  switchContainer: {
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  switchText: {
+    ...Fonts.body,
   },
   loadingContainer: {
     flex: 1,
