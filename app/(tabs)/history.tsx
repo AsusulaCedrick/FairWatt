@@ -127,37 +127,40 @@ export default function HistoryScreen() {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: themeColors.background }]}>
-      <ScreenHeader title="Consumption History" subtitle="Tap a record to inspect details." />
+    <View style={[styles.outerContainer, { backgroundColor: themeColors.background }]}>
+      <View style={styles.container}>
+        <ScreenHeader title="Consumption History" subtitle="Tap a record to inspect details." />
 
-      {history && history.length > 0 && (
-        <TouchableOpacity 
-          style={[styles.aiTriggerButton, { backgroundColor: themeColors.primary }]} 
-          onPress={handlePredictPress}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.aiButtonText}>✨ Predict Bill & Tips</Text>
-        </TouchableOpacity>
-      )}
+        {history && history.length > 0 && (
+          <TouchableOpacity 
+            style={[styles.aiTriggerButton, { backgroundColor: themeColors.primary }]} 
+            onPress={handlePredictPress}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.aiButtonText}>✨ Predict Bill & Tips</Text>
+          </TouchableOpacity>
+        )}
 
-      {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={themeColors.primary} />
-        </View>
-      ) : (
-        <FlatList
-          data={history}
-          keyExtractor={(item) => item.id?.toString() || item.created_at?.toString() || item.createdAt?.toString() || Math.random().toString()}
-          renderItem={renderItem}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <Text style={[styles.emptyText, { color: themeColors.textSecondary }]}>
-              No records yet.
-            </Text>
-          }
-        />
-      )}
+        {loading ? (
+          <View style={styles.center}>
+            <ActivityIndicator size="large" color={themeColors.primary} />
+          </View>
+        ) : (
+          <FlatList
+            data={history}
+            keyExtractor={(item) => item.id?.toString() || item.created_at?.toString() || item.createdAt?.toString() || Math.random().toString()}
+            renderItem={renderItem}
+            contentContainerStyle={styles.listContent}
+            style={styles.flatList}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <Text style={[styles.emptyText, { color: themeColors.textSecondary }]}>
+                No records yet.
+              </Text>
+            }
+          />
+        )}
+      </View>
 
       {/* --- CONFIRM BILL PREDICTION MODAL --- */}
       <ConfirmationModal
@@ -228,10 +231,20 @@ export default function HistoryScreen() {
 }
 
 const styles = StyleSheet.create({
+  outerContainer: {
+    flex: 1,
+    alignItems: 'center',
+    width: '100%',
+  },
   container: {
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 50,
+    width: '100%',
+    maxWidth: 600,
+  },
+  flatList: {
+    width: '100%',
   },
   listContent: {
     paddingBottom: 30,
@@ -245,6 +258,7 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOpacity: 0.01,
     shadowRadius: 4,
+    width: '100%',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -298,6 +312,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
+    width: '100%',
   },
   aiButtonText: {
     color: '#FFFFFF',

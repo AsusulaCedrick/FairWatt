@@ -89,53 +89,57 @@ export default function ForgotPasswordScreen() {
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
       
       {/* Custom Header with Back Chevron */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.replace('/AuthScreen')} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color={themeColors.primary} />
-        </TouchableOpacity>
+      <View style={styles.headerContainer}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.replace('/AuthScreen')} style={styles.backButton}>
+            <Ionicons name="chevron-back" size={28} color={themeColors.primary} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <View style={styles.content}>
-          <Text style={[styles.title, { color: themeColors.primary }]}>Forgot Password</Text>
+        <View style={styles.webContainer}>
+          <View style={styles.content}>
+            <Text style={[styles.title, { color: themeColors.primary }]}>Forgot Password</Text>
 
-          {/* Center Illustration - Envelope with Shield/Lock */}
-          <View style={styles.illustrationContainer}>
-            <View style={[styles.circleBg, { backgroundColor: isDarkMode ? '#1B3A2E' : '#E8F5E9' }]}>
-              <Ionicons name="mail" size={64} color={isDarkMode ? '#81C784' : '#4CAF50'} />
-              <View style={[styles.lockOverlay, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
-                <Ionicons name="lock-closed" size={20} color={themeColors.primary} />
+            {/* Center Illustration - Envelope with Shield/Lock */}
+            <View style={styles.illustrationContainer}>
+              <View style={[styles.circleBg, { backgroundColor: isDarkMode ? '#1B3A2E' : '#E8F5E9' }]}>
+                <Ionicons name="mail" size={64} color={isDarkMode ? '#81C784' : '#4CAF50'} />
+                <View style={[styles.lockOverlay, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+                  <Ionicons name="lock-closed" size={20} color={themeColors.primary} />
+                </View>
               </View>
             </View>
+
+            <Text style={[styles.subtitle, { color: themeColors.textSecondary }]}>
+              Enter your email address and we'll send you a link to reset your password.
+            </Text>
+
+            {/* Email Input Field */}
+            <Input
+              label="Email address"
+              placeholder="Enter your email"
+              keyboardType="email-address"
+              leftIcon="mail-outline"
+              value={email}
+              onChangeText={setEmail}
+            />
+
+            {/* Send Recovery Email Button */}
+            <Button
+              title={cooldown > 0 ? `Resend in ${cooldown}s` : 'Send Recovery Email'}
+              onPress={handleSendPress}
+              disabled={loading || cooldown > 0}
+              loading={loading}
+              style={styles.button}
+            />
+
+            {/* Back to Login Link */}
+            <TouchableOpacity onPress={() => router.replace('/AuthScreen')} style={styles.backLinkContainer}>
+              <Text style={[styles.backLinkText, { color: themeColors.primary }]}>Back to Login</Text>
+            </TouchableOpacity>
           </View>
-
-          <Text style={[styles.subtitle, { color: themeColors.textSecondary }]}>
-            Enter your email address and we'll send you a link to reset your password.
-          </Text>
-
-          {/* Email Input Field */}
-          <Input
-            label="Email address"
-            placeholder="Enter your email"
-            keyboardType="email-address"
-            leftIcon="mail-outline"
-            value={email}
-            onChangeText={setEmail}
-          />
-
-          {/* Send Recovery Email Button */}
-          <Button
-            title={cooldown > 0 ? `Resend in ${cooldown}s` : 'Send Recovery Email'}
-            onPress={handleSendPress}
-            disabled={loading || cooldown > 0}
-            loading={loading}
-            style={styles.button}
-          />
-
-          {/* Back to Login Link */}
-          <TouchableOpacity onPress={() => router.replace('/AuthScreen')} style={styles.backLinkContainer}>
-            <Text style={[styles.backLinkText, { color: themeColors.primary }]}>Back to Login</Text>
-          </TouchableOpacity>
         </View>
       </ScrollView>
 
@@ -173,7 +177,13 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
+  headerContainer: {
+    width: '100%',
+    alignItems: 'center',
+  },
   header: {
+    width: '100%',
+    maxWidth: 600,
     paddingHorizontal: 16,
     paddingVertical: 12,
     flexDirection: 'row',
@@ -184,9 +194,15 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
+    width: '100%',
+  },
+  webContainer: {
+    width: '100%',
+    alignItems: 'center',
   },
   content: {
-    flex: 1,
+    width: '100%',
+    maxWidth: 600,
     paddingHorizontal: 24,
     justifyContent: 'center',
     marginTop: -40, // offset upward slightly for optical balance

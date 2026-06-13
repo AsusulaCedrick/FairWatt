@@ -4,27 +4,35 @@ import { StyleSheet, View, Text } from 'react-native';
 export default function ModalScreen() {
   return (
     // 🛠️ UPDATE: Pinalitan ng standard View para ma-enforce ang #F5F7FA background
-    <View style={styles.container}>
-      <Text style={styles.title}>About FairWatt</Text>
-      <Text style={styles.description}>
-        This personal sub-meter app helps tenants track and predict their electric consumption dynamically.
-      </Text>
-      
-      {/* 🛠️ FIX: Binago mula "/" patungong "/(tabs)" para bumalik sa tamang tab route window */}
-      <Link href="/(tabs)" dismissTo style={styles.link}>
-        <Text style={styles.linkText}>Go back to Tracker</Text>
-      </Link>
+    <View style={styles.outerContainer}>
+      <View style={styles.container}>
+        <Text style={styles.title}>About FairWatt</Text>
+        <Text style={styles.description}>
+          This personal sub-meter app helps tenants track and predict their electric consumption dynamically.
+        </Text>
+        
+        {/* 🛠️ FIX: Binago mula "/" patungong "/(tabs)" para bumalik sa tamang tab route window */}
+        <Link href="/(tabs)" dismissTo style={styles.link}>
+          <Text style={styles.linkText}>Go back to Tracker</Text>
+        </Link>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  outerContainer: {
     flex: 1,
+    backgroundColor: '#F5F7FA', // Official Clean Off-White UI Color Standard
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  container: {
+    width: '100%',
+    maxWidth: 600,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
-    backgroundColor: '#F5F7FA', // Official Clean Off-White UI Color Standard
   },
   title: {
     fontSize: 22,

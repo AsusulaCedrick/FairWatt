@@ -139,96 +139,98 @@ export default function ResetPasswordScreen() {
     <SafeAreaView style={[styles.safeArea, { backgroundColor: themeColors.background }]}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
       <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-        {/* Custom Header with Back Chevron */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.replace('/forgot-password')} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={28} color={themeColors.primary} />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.content}>
-          {/* Centered FairWatt Logo */}
-          <View style={styles.logoContainer}>
-            <View style={[styles.logoIconBg, { backgroundColor: isDarkMode ? '#1B3A2E' : '#E8F5E9' }]}>
-              <Ionicons name="flash" size={40} color={isDarkMode ? '#81C784' : '#1B5E20'} />
-            </View>
+        <View style={styles.webContainer}>
+          {/* Custom Header with Back Chevron */}
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.replace('/forgot-password')} style={styles.backButton}>
+              <Ionicons name="chevron-back" size={28} color={themeColors.primary} />
+            </TouchableOpacity>
           </View>
 
-          <Text style={[styles.title, { color: themeColors.text }]}>Reset Password</Text>
-          <Text style={[styles.subtitle, { color: themeColors.textSecondary }]}>
-            Create a new password for your account.{"\n"}Make sure it's strong and secure.
-          </Text>
-
-          {/* New Password Input Field */}
-          <Input
-            label="New Password"
-            placeholder="Enter new password"
-            secureTextEntry
-            leftIcon="lock-closed-outline"
-            value={newPassword}
-            onChangeText={setNewPassword}
-          />
-
-          {/* Real-time Validation Checklist */}
-          {newPassword.length > 0 && (
-            <View style={[styles.checklistContainer, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
-              <Text style={[styles.checklistTitle, { color: themeColors.text }]}>Requirements:</Text>
-              {renderValidationRule(isMinLength, 'At least 8 characters')}
-              {renderValidationRule(hasUppercase, 'At least 1 uppercase letter (A-Z)')}
-              {renderValidationRule(hasLowercase, 'At least 1 lowercase letter (a-z)')}
-              {renderValidationRule(hasNumber, 'At least 1 number (0-9)')}
-              {renderValidationRule(hasSpecialChar, 'At least 1 special character (!@#$%^&*)')}
-              {renderValidationRule(hasNoSpaces, 'No spaces allowed')}
+          <View style={styles.content}>
+            {/* Centered FairWatt Logo */}
+            <View style={styles.logoContainer}>
+              <View style={[styles.logoIconBg, { backgroundColor: isDarkMode ? '#1B3A2E' : '#E8F5E9' }]}>
+                <Ionicons name="flash" size={40} color={isDarkMode ? '#81C784' : '#1B5E20'} />
+              </View>
             </View>
-          )}
 
-          {/* Confirm Password Input Field */}
-          <Input
-            label="Confirm New Password"
-            placeholder="Confirm new password"
-            secureTextEntry
-            leftIcon="lock-closed-outline"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-          />
-
-          {confirmPassword.length > 0 && (
-            <View style={styles.matchContainer}>
-              <Text style={[styles.matchText, { color: isConfirmMatch ? themeColors.success : themeColors.error }]}>
-                {isConfirmMatch ? '✓ Passwords match' : '✗ Passwords do not match'}
-              </Text>
-            </View>
-          )}
-
-          {/* Reset Password Button */}
-          <Button
-            title="Reset Password"
-            onPress={handleUpdatePress}
-            disabled={!isPasswordValid || !isConfirmMatch || loading}
-            loading={loading}
-            iconName="lock-closed-outline"
-            style={styles.button}
-          />
-
-          {/* Divider style */}
-          <View style={styles.dividerRow}>
-            <View style={[styles.dividerLine, { backgroundColor: themeColors.border }]} />
-            <Text style={[styles.dividerText, { color: themeColors.textSecondary }]}>or</Text>
-            <View style={[styles.dividerLine, { backgroundColor: themeColors.border }]} />
-          </View>
-
-          {/* Switching redirect */}
-          <TouchableOpacity 
-            onPress={() => router.replace('/AuthScreen')}
-            style={styles.switchContainer}
-          >
-            <Text style={[styles.switchText, { color: themeColors.textSecondary }]}>
-              Remember your password?{' '}
-              <Text style={{ color: themeColors.primary, fontWeight: '700' }}>
-                Login
-              </Text>
+            <Text style={[styles.title, { color: themeColors.text }]}>Reset Password</Text>
+            <Text style={[styles.subtitle, { color: themeColors.textSecondary }]}>
+              Create a new password for your account.{"\n"}Make sure it's strong and secure.
             </Text>
-          </TouchableOpacity>
+
+            {/* New Password Input Field */}
+            <Input
+              label="New Password"
+              placeholder="Enter new password"
+              secureTextEntry
+              leftIcon="lock-closed-outline"
+              value={newPassword}
+              onChangeText={setNewPassword}
+            />
+
+            {/* Real-time Validation Checklist */}
+            {newPassword.length > 0 && (
+              <View style={[styles.checklistContainer, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+                <Text style={[styles.checklistTitle, { color: themeColors.text }]}>Requirements:</Text>
+                {renderValidationRule(isMinLength, 'At least 8 characters')}
+                {renderValidationRule(hasUppercase, 'At least 1 uppercase letter (A-Z)')}
+                {renderValidationRule(hasLowercase, 'At least 1 lowercase letter (a-z)')}
+                {renderValidationRule(hasNumber, 'At least 1 number (0-9)')}
+                {renderValidationRule(hasSpecialChar, 'At least 1 special character (!@#$%^&*)')}
+                {renderValidationRule(hasNoSpaces, 'No spaces allowed')}
+              </View>
+            )}
+
+            {/* Confirm Password Input Field */}
+            <Input
+              label="Confirm New Password"
+              placeholder="Confirm new password"
+              secureTextEntry
+              leftIcon="lock-closed-outline"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+            />
+
+            {confirmPassword.length > 0 && (
+              <View style={styles.matchContainer}>
+                <Text style={[styles.matchText, { color: isConfirmMatch ? themeColors.success : themeColors.error }]}>
+                  {isConfirmMatch ? '✓ Passwords match' : '✗ Passwords do not match'}
+                </Text>
+              </View>
+            )}
+
+            {/* Reset Password Button */}
+            <Button
+              title="Reset Password"
+              onPress={handleUpdatePress}
+              disabled={!isPasswordValid || !isConfirmMatch || loading}
+              loading={loading}
+              iconName="lock-closed-outline"
+              style={styles.button}
+            />
+
+            {/* Divider style */}
+            <View style={styles.dividerRow}>
+              <View style={[styles.dividerLine, { backgroundColor: themeColors.border }]} />
+              <Text style={[styles.dividerText, { color: themeColors.textSecondary }]}>or</Text>
+              <View style={[styles.dividerLine, { backgroundColor: themeColors.border }]} />
+            </View>
+
+            {/* Switching redirect */}
+            <TouchableOpacity 
+              onPress={() => router.replace('/AuthScreen')}
+              style={styles.switchContainer}
+            >
+              <Text style={[styles.switchText, { color: themeColors.textSecondary }]}>
+                Remember your password?{' '}
+                <Text style={{ color: themeColors.primary, fontWeight: '700' }}>
+                  Login
+                </Text>
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
 
@@ -279,8 +281,15 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
+    width: '100%',
+  },
+  webContainer: {
+    width: '100%',
+    alignItems: 'center',
   },
   header: {
+    width: '100%',
+    maxWidth: 600,
     paddingHorizontal: 16,
     paddingVertical: 12,
     flexDirection: 'row',
@@ -290,7 +299,8 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   content: {
-    flex: 1,
+    width: '100%',
+    maxWidth: 600,
     paddingHorizontal: 24,
     paddingBottom: 40,
   },

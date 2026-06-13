@@ -80,58 +80,60 @@ export default function ProfileScreen() {
     <SafeAreaView style={[styles.safeArea, { backgroundColor: themeColors.background }]}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.profileHeader}>
-          {/* Avatar container */}
-          <TouchableOpacity 
-            style={[styles.avatarContainer, { backgroundColor: isDarkMode ? '#333333' : '#DDE6E2', borderColor: themeColors.border }]} 
-            onPress={pickImage}
-            activeOpacity={0.8}
-          >
-            {profileImage ? (
-              <Image source={{ uri: profileImage }} style={styles.avatar} />
-            ) : (
-              <Ionicons name="person" size={50} color={isDarkMode ? "#FFFFFF" : "#1B5E20"} />
-            )}
-            <View style={[styles.editIcon, { backgroundColor: themeColors.primary, borderColor: themeColors.background }]}>
-              <Ionicons name="pencil" size={14} color="white" />
-            </View>
-          </TouchableOpacity>
-          
-          <Text style={[styles.name, { color: themeColors.primary }]}>
-            {displayName.charAt(0).toUpperCase() + displayName.slice(1)}
-          </Text>
-          <Text style={[styles.email, { color: themeColors.textSecondary }]}>{user?.email}</Text>
-        </View>
-
-        <View style={styles.settingsContainer}>
-          <View style={[styles.settingItem, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
-            <View style={styles.rowLeft}>
-              <View style={[styles.iconWrapper, { backgroundColor: isDarkMode ? '#1B3A2E' : '#E8F5E9' }]}>
-                <Ionicons name="moon-outline" size={22} color={themeColors.primary} />
+        <View style={styles.contentWrapper}>
+          <View style={styles.profileHeader}>
+            {/* Avatar container */}
+            <TouchableOpacity 
+              style={[styles.avatarContainer, { backgroundColor: isDarkMode ? '#333333' : '#DDE6E2', borderColor: themeColors.border }]} 
+              onPress={pickImage}
+              activeOpacity={0.8}
+            >
+              {profileImage ? (
+                <Image source={{ uri: profileImage }} style={styles.avatar} />
+              ) : (
+                <Ionicons name="person" size={50} color={isDarkMode ? "#FFFFFF" : "#1B5E20"} />
+              )}
+              <View style={[styles.editIcon, { backgroundColor: themeColors.primary, borderColor: themeColors.background }]}>
+                <Ionicons name="pencil" size={14} color="white" />
               </View>
-              <Text style={[styles.settingText, { color: themeColors.text }]}>Dark Mode</Text>
-            </View>
-            <Switch 
-              value={isDarkMode} 
-              onValueChange={() => setShowConfirmTheme(true)} 
-              trackColor={{ true: themeColors.primary, false: isDarkMode ? '#334155' : '#ccc' }} 
-              thumbColor={Platform.OS === 'android' ? '#FFFFFF' : undefined}
-            />
+            </TouchableOpacity>
+            
+            <Text style={[styles.name, { color: themeColors.primary }]}>
+              {displayName.charAt(0).toUpperCase() + displayName.slice(1)}
+            </Text>
+            <Text style={[styles.email, { color: themeColors.textSecondary }]}>{user?.email}</Text>
           </View>
 
-          <TouchableOpacity 
-            style={[styles.logoutButton, { backgroundColor: themeColors.card, borderColor: themeColors.border }]} 
-            onPress={() => setShowConfirmLogout(true)}
-            activeOpacity={0.8}
-          >
-            <View style={styles.rowLeft}>
-              <View style={[styles.iconWrapper, { backgroundColor: isDarkMode ? '#3A1E1E' : '#FDE8E8' }]}>
-                <Ionicons name="log-out-outline" size={22} color={themeColors.error} />
+          <View style={styles.settingsContainer}>
+            <View style={[styles.settingItem, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+              <View style={styles.rowLeft}>
+                <View style={[styles.iconWrapper, { backgroundColor: isDarkMode ? '#1B3A2E' : '#E8F5E9' }]}>
+                  <Ionicons name="moon-outline" size={22} color={themeColors.primary} />
+                </View>
+                <Text style={[styles.settingText, { color: themeColors.text }]}>Dark Mode</Text>
               </View>
-              <Text style={[styles.logoutText, { color: themeColors.error }]}>Logout</Text>
+              <Switch 
+                value={isDarkMode} 
+                onValueChange={() => setShowConfirmTheme(true)} 
+                trackColor={{ true: themeColors.primary, false: isDarkMode ? '#334155' : '#ccc' }} 
+                thumbColor={Platform.OS === 'android' ? '#FFFFFF' : undefined}
+              />
             </View>
-            <Ionicons name="chevron-forward" size={20} color={themeColors.textSecondary} />
-          </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.logoutButton, { backgroundColor: themeColors.card, borderColor: themeColors.border }]} 
+              onPress={() => setShowConfirmLogout(true)}
+              activeOpacity={0.8}
+            >
+              <View style={styles.rowLeft}>
+                <View style={[styles.iconWrapper, { backgroundColor: isDarkMode ? '#3A1E1E' : '#FDE8E8' }]}>
+                  <Ionicons name="log-out-outline" size={22} color={themeColors.error} />
+                </View>
+                <Text style={[styles.logoutText, { color: themeColors.error }]}>Logout</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={themeColors.textSecondary} />
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
 
@@ -191,9 +193,16 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   safeArea: { 
     flex: 1, 
+    width: '100%',
   },
   scrollContent: {
     paddingBottom: 40,
+    alignItems: 'center',
+    width: '100%',
+  },
+  contentWrapper: {
+    width: '100%',
+    maxWidth: 600,
   },
   profileHeader: { 
     alignItems: 'center', 
@@ -235,6 +244,7 @@ const styles = StyleSheet.create({
   },
   settingsContainer: { 
     paddingHorizontal: 20,
+    width: '100%',
   },
   settingItem: { 
     flexDirection: 'row', 
@@ -248,6 +258,7 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOpacity: 0.01,
     shadowRadius: 4,
+    width: '100%',
   },
   settingText: { 
     ...Fonts.body,
@@ -265,6 +276,7 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOpacity: 0.01,
     shadowRadius: 4,
+    width: '100%',
   },
   logoutText: { 
     ...Fonts.body,

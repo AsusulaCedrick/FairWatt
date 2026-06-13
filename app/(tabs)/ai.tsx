@@ -101,13 +101,13 @@ export default function AIScreen() {
 
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
-        style={{ flex: 1 }}
+        style={[styles.keyboardAvoidingView, { flex: 1 }]}
       >
         {/* RESPONSIVE SCROLL VIEW: Ang usapan lamang ang gumagalaw kapag nag-scroll ang user */}
         <ScrollView 
           ref={scrollViewRef} 
           contentContainerStyle={styles.chatContainer}
-          style={{ flex: 1 }}
+          style={{ flex: 1, width: '100%' }}
           showsVerticalScrollIndicator={false}
           onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
         >
@@ -157,8 +157,12 @@ export default function AIScreen() {
 const styles = StyleSheet.create({
   mainWrapper: { 
     flex: 1, 
+    alignItems: 'center',
+    width: '100%',
   },
   topBarContainer: {
+    width: '100%',
+    maxWidth: 600,
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
@@ -179,11 +183,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 2,
   },
+  keyboardAvoidingView: {
+    width: '100%',
+    maxWidth: 600,
+    flex: 1,
+  },
   chatContainer: { 
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 24,
     alignItems: 'center',
+    width: '100%',
   },
   messageBubble: { 
     padding: 14, 
@@ -219,6 +229,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12, 
     borderTopWidth: 1.5, 
     alignItems: 'center',
+    width: '100%',
   },
   input: { 
     flex: 1, 

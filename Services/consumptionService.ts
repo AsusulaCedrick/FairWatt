@@ -80,6 +80,7 @@ export async function saveConsumptionRecord(data: any) {
         provider: provider,
         rate: numericRate,
         daily_kwh: dailyKwh,
+        daily_cost: dailyCost,
         monthly_cost: monthlyCost,
         created_at: new Date().toISOString(),
       }]);

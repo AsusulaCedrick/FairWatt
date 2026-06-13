@@ -1,23 +1,22 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Image, Dimensions } from 'react-native';
-import { useRouter } from 'expo-router';
-import { supabase } from '../lib/supabase';
-import { useAuth } from '../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Fonts, Radius } from '../constants/theme';
-import { Spacing } from '../constants/Spacing';
-import { Input } from '../components/ui/Input';
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Button } from '../components/ui/Button';
 import { ConfirmationModal } from '../components/ui/ConfirmationModal';
-import { SuccessModal } from '../components/ui/SuccessModal';
 import { ErrorModal } from '../components/ui/ErrorModal';
+import { Input } from '../components/ui/Input';
+import { SuccessModal } from '../components/ui/SuccessModal';
+import { Colors, Fonts, Radius } from '../constants/theme';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 
 const screenWidth = Dimensions.get('window').width;
 
 export default function AuthScreen() {
   const router = useRouter();
-  const { user, isLoading, signUp, isDarkMode } = useAuth(); 
-  
+  const { user, isLoading, signUp, isDarkMode } = useAuth();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -48,10 +47,10 @@ export default function AuthScreen() {
 
   const renderValidationRule = (isValid: boolean, text: string) => (
     <View style={styles.ruleItem} key={text}>
-      <Ionicons 
-        name={isValid ? "checkmark-circle" : "close-circle"} 
-        size={16} 
-        color={isValid ? themeColors.success : themeColors.error} 
+      <Ionicons
+        name={isValid ? "checkmark-circle" : "close-circle"}
+        size={16}
+        color={isValid ? themeColors.success : themeColors.error}
       />
       <Text style={[styles.ruleText, { color: isValid ? themeColors.success : themeColors.textSecondary }]}>
         {text}
@@ -115,7 +114,7 @@ export default function AuthScreen() {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
       if (error) throw error;
-      
+
       // Show success modal
       setShowSuccessLogin(true);
     } catch (error: any) {
@@ -148,124 +147,118 @@ export default function AuthScreen() {
   };
 
   return (
-    <ScrollView 
-      style={{ backgroundColor: themeColors.background }} 
+    <ScrollView
+      style={{ backgroundColor: themeColors.background }}
       contentContainerStyle={styles.scrollContainer}
       keyboardShouldPersistTaps="handled"
     >
       <View style={styles.container}>
-        {/* FairWatt Logo and Branding */}
-        <View style={styles.logoContainer}>
-          <View style={[styles.logoIconBg, { backgroundColor: isDarkMode ? '#1B3A2E' : '#E8F5E9' }]}>
-            <Ionicons name="flash" size={40} color={isDarkMode ? '#81C784' : '#1B5E20'} />
+        <View style={styles.contentWrapper}>
+          {/* FairWatt Logo and Branding */}
+          <View style={styles.logoContainer}>
+            <View style={[styles.logoIconBg, { backgroundColor: isDarkMode ? '#1B3A2E' : '#E8F5E9' }]}>
+              <Ionicons name="flash" size={40} color={isDarkMode ? '#81C784' : '#1B5E20'} />
+            </View>
+            <Text style={[styles.logoText, { color: themeColors.primary }]}>FairWatt</Text>
+            <Text style={[styles.subtitle, { color: themeColors.textSecondary }]}>
+              {isLogin ? "Welcome Back!" : "Create Account"}
+            </Text>
+            <Text style={[styles.tagline, { color: themeColors.textSecondary }]}>
+              {isLogin ? "Sign in to continue tracking energy." : "Sign up to get started with FairWatt."}
+            </Text>
           </View>
-          <Text style={[styles.logoText, { color: themeColors.primary }]}>FairWatt</Text>
-          <Text style={[styles.subtitle, { color: themeColors.textSecondary }]}>
-            {isLogin ? "Welcome Back!" : "Create Account"}
-          </Text>
-          <Text style={[styles.tagline, { color: themeColors.textSecondary }]}>
-            {isLogin ? "Sign in to continue tracking energy." : "Sign up to get started with FairWatt."}
-          </Text>
-        </View>
 
-        {/* Form Card Layout */}
-        <View style={[styles.formCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
-          
-          {!isLogin && (
+          {/* Form Card Layout */}
+          <View style={[styles.formCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+
+            {!isLogin && (
+              <Input
+                label="Full Name"
+                placeholder="Enter your full name"
+                value={fullName}
+                onChangeText={setFullName}
+                leftIcon="person-outline"
+              />
+            )}
+
             <Input
-              label="Full Name"
-              placeholder="Enter your full name"
-              value={fullName}
-              onChangeText={setFullName}
-              leftIcon="person-outline"
+              label="Email Address"
+              placeholder="Enter your email"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              leftIcon="mail-outline"
             />
-          )}
 
-          <Input
-            label="Email Address"
-            placeholder="Enter your email"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            leftIcon="mail-outline"
-          />
-
-          <Input
-            label="Password"
-            placeholder="Enter your password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            leftIcon="lock-closed-outline"
-          />
-
-          {!isLogin && (
             <Input
-              label="Confirm Password"
-              placeholder="Confirm your password"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
+              label="Password"
+              placeholder="Enter your password"
+              value={password}
+              onChangeText={setPassword}
               secureTextEntry
               leftIcon="lock-closed-outline"
             />
-          )}
 
-          {/* Validation Checklist on Sign Up */}
-          {!isLogin && password.length > 0 && (
-            <View style={[styles.checklistCard, { backgroundColor: isDarkMode ? '#1E1E1E' : '#FFFFFF', borderColor: themeColors.border }]}>
-              <Text style={[styles.checklistTitle, { color: themeColors.text }]}>Requirements:</Text>
-              {renderValidationRule(isMinLength, "At least 8 characters")}
-              {renderValidationRule(hasNoSpaces, "No spaces allowed")}
-              {renderValidationRule(hasUppercase, "At least 1 uppercase letter (A-Z)")}
-              {renderValidationRule(hasLowercase, "At least 1 lowercase letter (a-z)")}
-              {renderValidationRule(hasNumber, "At least 1 number (0-9)")}
-              {renderValidationRule(hasSpecialChar, "At least 1 special character (!@#$%^&*)")}
+            {!isLogin && (
+              <Input
+                label="Confirm Password"
+                placeholder="Confirm your password"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry
+                leftIcon="lock-closed-outline"
+              />
+            )}
+
+            {/* Validation Checklist on Sign Up */}
+            {!isLogin && password.length > 0 && (
+              <View style={[styles.checklistCard, { backgroundColor: isDarkMode ? '#1E1E1E' : '#FFFFFF', borderColor: themeColors.border }]}>
+                <Text style={[styles.checklistTitle, { color: themeColors.text }]}>Requirements:</Text>
+                {renderValidationRule(isMinLength, "At least 8 characters")}
+                {renderValidationRule(hasNoSpaces, "No spaces allowed")}
+                {renderValidationRule(hasUppercase, "At least 1 uppercase letter (A-Z)")}
+                {renderValidationRule(hasLowercase, "At least 1 lowercase letter (a-z)")}
+                {renderValidationRule(hasNumber, "At least 1 number (0-9)")}
+                {renderValidationRule(hasSpecialChar, "At least 1 special character (!@#$%^&*)")}
+              </View>
+            )}
+
+            {isLogin && (
+              <TouchableOpacity onPress={handleForgotPassword} style={styles.forgotContainer}>
+                <Text style={[styles.forgotText, { color: themeColors.primary }]}>Forgot Password?</Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Submit Button */}
+            <Button
+              title={isLogin ? "Login" : "Sign Up"}
+              onPress={handleAuthPress}
+              loading={loading}
+              style={styles.mainButton}
+            />
+
+            {/* Divider style */}
+            <View style={styles.dividerRow}>
+              <View style={[styles.dividerLine, { backgroundColor: themeColors.border }]} />
+              <Text style={[styles.dividerText, { color: themeColors.textSecondary }]}>or</Text>
+              <View style={[styles.dividerLine, { backgroundColor: themeColors.border }]} />
             </View>
-          )}
 
-          {isLogin && (
-            <TouchableOpacity onPress={handleForgotPassword} style={styles.forgotContainer}>
-              <Text style={[styles.forgotText, { color: themeColors.primary }]}>Forgot Password?</Text>
-            </TouchableOpacity>
-          )}
 
-          {/* Submit Button */}
-          <Button
-            title={isLogin ? "Login" : "Sign Up"}
-            onPress={handleAuthPress}
-            loading={loading}
-            style={styles.mainButton}
-          />
 
-          {/* Divider style */}
-          <View style={styles.dividerRow}>
-            <View style={[styles.dividerLine, { backgroundColor: themeColors.border }]} />
-            <Text style={[styles.dividerText, { color: themeColors.textSecondary }]}>or</Text>
-            <View style={[styles.dividerLine, { backgroundColor: themeColors.border }]} />
-          </View>
-
-          {/* Google Login button */}
-          <TouchableOpacity 
-            activeOpacity={0.8}
-            onPress={() => {}} // Preserve google login layout
-            style={[styles.googleButton, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}
-          >
-            <Ionicons name="logo-google" size={18} color="#EA4335" style={styles.googleIcon} />
-            <Text style={[styles.googleText, { color: themeColors.text }]}>Continue with Google</Text>
-          </TouchableOpacity>
-
-          {/* Switching redirect */}
-          <TouchableOpacity 
-            onPress={() => { setIsLogin(!isLogin); setPassword(''); setConfirmPassword(''); setEmail(''); setFullName(''); }}
-            style={styles.switchContainer}
-          >
-            <Text style={[styles.switchText, { color: themeColors.textSecondary }]}>
-              {isLogin ? "Don't have an account? " : "Already have an account? "}
-              <Text style={{ color: themeColors.primary, fontWeight: '700' }}>
-                {isLogin ? "Sign up" : "Login"}
+            {/* Switching redirect */}
+            <TouchableOpacity
+              onPress={() => { setIsLogin(!isLogin); setPassword(''); setConfirmPassword(''); setEmail(''); setFullName(''); }}
+              style={styles.switchContainer}
+            >
+              <Text style={[styles.switchText, { color: themeColors.textSecondary }]}>
+                {isLogin ? "Don't have an account? " : "Already have an account? "}
+                <Text style={{ color: themeColors.primary, fontWeight: '700' }}>
+                  {isLogin ? "Sign up" : "Login"}
+                </Text>
               </Text>
-            </Text>
-          </TouchableOpacity>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
@@ -329,10 +322,17 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
     paddingBottom: 40,
+    width: '100%',
   },
   container: {
     flex: 1,
     paddingHorizontal: 24,
+    alignItems: 'center',
+    width: '100%',
+  },
+  contentWrapper: {
+    width: '100%',
+    maxWidth: 600,
     alignItems: 'center',
   },
   logoContainer: {

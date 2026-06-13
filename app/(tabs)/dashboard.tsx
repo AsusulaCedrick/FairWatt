@@ -4,8 +4,8 @@ import {
   Text, 
   StyleSheet, 
   ScrollView, 
-  Dimensions, 
-  ActivityIndicator 
+  ActivityIndicator,
+  useWindowDimensions
 } from "react-native";
 import { PieChart, BarChart, LineChart } from "react-native-chart-kit";
 import { ScreenHeader } from '../../components/ScreenHeader';
@@ -30,12 +30,11 @@ interface ChartDataset {
   }[];
 }
 
-const screenWidth = Dimensions.get("window").width;
-
 export default function DashboardScreen() {
   const { user, isLoading, isDarkMode } = useAuth();
   const router = useRouter();
   const themeColors = isDarkMode ? Colors.dark : Colors.light;
+  const { width: screenWidth } = useWindowDimensions();
 
   const [loading, setLoading] = useState(true);
   const [totalMonthly, setTotalMonthly] = useState(0);
@@ -103,6 +102,11 @@ export default function DashboardScreen() {
   }
 
   const isTrendDataEmpty = !lineData.datasets[0]?.data.length;
+  
+  // Calculate responsive sizes capped at the 600px wrapper width
+  const contentWidth = Math.min(screenWidth, 600);
+  const chartWidth = contentWidth - 76;
+  const pieChartWidth = contentWidth - 40;
 
   return (
     <ScrollView 
@@ -110,91 +114,93 @@ export default function DashboardScreen() {
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
     >
-      <ScreenHeader
-        title="Energy Dashboard"
-        subtitle="Live insights from appliance consumption and monthly cost trends."
-      />
+      <View style={styles.contentWrapper}>
+        <ScreenHeader
+          title="Energy Dashboard"
+          subtitle="Live insights from appliance consumption and monthly cost trends."
+        />
 
-      {/* SUMMARY CARD */}
-      <View style={[styles.mainCard, { backgroundColor: themeColors.primary }]}>
-        <Text style={styles.labelWhite}>ESTIMATED MONTHLY BILL</Text>
-        <Text style={styles.valueWhite}>
-          ₱ {totalMonthly.toLocaleString(undefined, {minimumFractionDigits: 2})}
-        </Text>
-      </View>
-
-      <View style={styles.row}>
-        <View style={[styles.halfCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
-          <Text style={[styles.labelGray, { color: themeColors.textSecondary }]}>DAILY COST</Text>
-          <Text style={[styles.valueGreen, { color: themeColors.text }]}>₱ {totalDaily.toFixed(2)}</Text>
-        </View>
-        <View style={[styles.halfCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
-          <Text style={[styles.labelGray, { color: themeColors.textSecondary }]}>APPLIANCES</Text>
-          <Text style={[styles.valueGreen, { color: themeColors.text }]}>{applianceCount}</Text>
-        </View>
-      </View>
-
-      {applianceCount > 0 ? (
-        <>
-          {!isTrendDataEmpty && (
-            <View style={[styles.chartBox, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
-              <Text style={[styles.chartTitle, { color: themeColors.primary }]}>7-Day Trend</Text>
-              <LineChart
-                data={lineData}
-                width={screenWidth - 76}
-                height={180}
-                chartConfig={chartConfig}
-                bezier
-                style={styles.rounded}
-                fromZero
-                yAxisLabel="₱"
-                yAxisSuffix=""
-              />
-            </View>
-          )}
-
-          {topAppliances.labels.length > 0 && (
-            <View style={[styles.chartBox, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
-              <Text style={[styles.chartTitle, { color: themeColors.primary }]}>Top Appliances</Text>
-              <BarChart
-                data={topAppliances}
-                width={screenWidth - 76}
-                height={250}
-                chartConfig={chartConfig}
-                yAxisLabel="₱"
-                yAxisSuffix=""
-                fromZero
-                style={styles.rounded}
-                verticalLabelRotation={30}
-              />
-            </View>
-          )}
-
-          {pieData.length > 0 && (
-            <View style={[styles.chartBox, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
-              <Text style={[styles.chartTitle, { color: themeColors.primary }]}>By Category</Text>
-              <View style={styles.pieContainer}>
-                <PieChart
-                  data={pieData}
-                  width={screenWidth - 40}
-                  height={180}
-                  chartConfig={chartConfig}
-                  accessor={"population"}
-                  backgroundColor={"transparent"}
-                  paddingLeft={"10"}
-                  absolute
-                />
-              </View>
-            </View>
-          )}
-        </>
-      ) : (
-        <View style={styles.emptyBox}>
-          <Text style={[styles.emptyText, { color: themeColors.textSecondary }]}>
-            Add history to see energy insights.
+        {/* SUMMARY CARD */}
+        <View style={[styles.mainCard, { backgroundColor: themeColors.primary }]}>
+          <Text style={styles.labelWhite}>ESTIMATED MONTHLY BILL</Text>
+          <Text style={styles.valueWhite}>
+            ₱ {totalMonthly.toLocaleString(undefined, {minimumFractionDigits: 2})}
           </Text>
         </View>
-      )}
+
+        <View style={styles.row}>
+          <View style={[styles.halfCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+            <Text style={[styles.labelGray, { color: themeColors.textSecondary }]}>DAILY COST</Text>
+            <Text style={[styles.valueGreen, { color: themeColors.text }]}>₱ {totalDaily.toFixed(2)}</Text>
+          </View>
+          <View style={[styles.halfCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+            <Text style={[styles.labelGray, { color: themeColors.textSecondary }]}>APPLIANCES</Text>
+            <Text style={[styles.valueGreen, { color: themeColors.text }]}>{applianceCount}</Text>
+          </View>
+        </View>
+
+        {applianceCount > 0 ? (
+          <>
+            {!isTrendDataEmpty && (
+              <View style={[styles.chartBox, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+                <Text style={[styles.chartTitle, { color: themeColors.primary }]}>7-Day Trend</Text>
+                <LineChart
+                  data={lineData}
+                  width={chartWidth}
+                  height={180}
+                  chartConfig={chartConfig}
+                  bezier
+                  style={styles.rounded}
+                  fromZero
+                  yAxisLabel="₱"
+                  yAxisSuffix=""
+                />
+              </View>
+            )}
+
+            {topAppliances.labels.length > 0 && (
+              <View style={[styles.chartBox, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+                <Text style={[styles.chartTitle, { color: themeColors.primary }]}>Top Appliances</Text>
+                <BarChart
+                  data={topAppliances}
+                  width={chartWidth}
+                  height={250}
+                  chartConfig={chartConfig}
+                  yAxisLabel="₱"
+                  yAxisSuffix=""
+                  fromZero
+                  style={styles.rounded}
+                  verticalLabelRotation={30}
+                />
+              </View>
+            )}
+
+            {pieData.length > 0 && (
+              <View style={[styles.chartBox, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+                <Text style={[styles.chartTitle, { color: themeColors.primary }]}>By Category</Text>
+                <View style={styles.pieContainer}>
+                  <PieChart
+                    data={pieData}
+                    width={pieChartWidth}
+                    height={180}
+                    chartConfig={chartConfig}
+                    accessor={"population"}
+                    backgroundColor={"transparent"}
+                    paddingLeft={"10"}
+                    absolute
+                  />
+                </View>
+              </View>
+            )}
+          </>
+        ) : (
+          <View style={styles.emptyBox}>
+            <Text style={[styles.emptyText, { color: themeColors.textSecondary }]}>
+              Add history to see energy insights.
+            </Text>
+          </View>
+        )}
+      </View>
     </ScrollView>
   );
 }
@@ -202,11 +208,18 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
+    width: '100%',
   },
   scrollContent: {
     padding: 20, 
     paddingTop: 50,
     paddingBottom: 40,
+    alignItems: 'center',
+    width: '100%',
+  },
+  contentWrapper: {
+    width: '100%',
+    maxWidth: 600,
   },
   center: { 
     flex: 1, 
@@ -221,6 +234,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.03,
     shadowRadius: 10,
     elevation: 2,
+    width: '100%',
   },
   labelWhite: { 
     ...Fonts.caption,
@@ -241,6 +255,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between", 
     marginBottom: 20,
     width: '100%',
+    flexWrap: 'wrap',
   },
   halfCard: { 
     width: "48%", 
@@ -271,6 +286,7 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOpacity: 0.01,
     shadowRadius: 6,
+    width: '100%',
   },
   chartTitle: { 
     ...Fonts.h3,
@@ -284,6 +300,7 @@ const styles = StyleSheet.create({
     padding: 40, 
     alignItems: 'center',
     justifyContent: 'center',
+    width: '100%',
   },
   emptyText: { 
     ...Fonts.body,
@@ -293,5 +310,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: -10,
+    width: '100%',
   },
 });

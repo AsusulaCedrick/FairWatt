@@ -244,40 +244,42 @@ export default function HomeScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <ScreenHeader
-          title="FairWatt"
-          subtitle="A Personal Electric Sub-Meter Tracker."
-        />
-
-        <View style={[styles.card, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
-          {fieldSections.map((section) => (
-            <View key={section.title} style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: themeColors.primary }]}>{section.title}</Text>
-              {section.keys
-                .map((key) => formFields.find((field) => field.key === key))
-                .filter(Boolean)
-                .map((field) => renderField(field as FormFieldConfig))}
-            </View>
-          ))}
-
-          {showResult ? (
-            <View style={[styles.resultPreview, { backgroundColor: isDarkMode ? '#1E293B' : '#E8F5E9', borderColor: themeColors.primary }]}>
-              <View style={styles.resultBox}>
-                <Text style={[styles.resultLabel, { color: themeColors.textSecondary }]}>Daily Share</Text>
-                <Text style={[styles.resultValue, { color: themeColors.text }]}>₱{result.daily.toFixed(2)}</Text>
-              </View>
-              <View style={[styles.resultBox, styles.monthlyBox, { borderColor: themeColors.border }]}>
-                <Text style={[styles.resultLabel, { color: themeColors.textSecondary }]}>Monthly Share</Text>
-                <Text style={[styles.resultValue, { color: themeColors.text }]}>₱{result.monthly.toFixed(2)}</Text>
-              </View>
-            </View>
-          ) : null}
-
-          <Button
-            title={saving ? 'Saving…' : 'Calculate & Save'}
-            onPress={handleSavePress}
-            disabled={saving}
+        <View style={styles.contentWrapper}>
+          <ScreenHeader
+            title="FairWatt"
+            subtitle="A Personal Electric Sub-Meter Tracker."
           />
+
+          <View style={[styles.card, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+            {fieldSections.map((section) => (
+              <View key={section.title} style={styles.section}>
+                <Text style={[styles.sectionTitle, { color: themeColors.primary }]}>{section.title}</Text>
+                {section.keys
+                  .map((key) => formFields.find((field) => field.key === key))
+                  .filter(Boolean)
+                  .map((field) => renderField(field as FormFieldConfig))}
+              </View>
+            ))}
+
+            {showResult ? (
+              <View style={[styles.resultPreview, { backgroundColor: isDarkMode ? '#1E293B' : '#E8F5E9', borderColor: themeColors.primary }]}>
+                <View style={styles.resultBox}>
+                  <Text style={[styles.resultLabel, { color: themeColors.textSecondary }]}>Daily Share</Text>
+                  <Text style={[styles.resultValue, { color: themeColors.text }]}>₱{result.daily.toFixed(2)}</Text>
+                </View>
+                <View style={[styles.resultBox, styles.monthlyBox, { borderColor: themeColors.border }]}>
+                  <Text style={[styles.resultLabel, { color: themeColors.textSecondary }]}>Monthly Share</Text>
+                  <Text style={[styles.resultValue, { color: themeColors.text }]}>₱{result.monthly.toFixed(2)}</Text>
+                </View>
+              </View>
+            ) : null}
+
+            <Button
+              title={saving ? 'Saving…' : 'Calculate & Save'}
+              onPress={handleSavePress}
+              disabled={saving}
+            />
+          </View>
         </View>
       </ScrollView>
 
@@ -314,11 +316,18 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    width: '100%',
   },
   scrollContent: {
     padding: 20,
     paddingTop: 50,
     paddingBottom: 40,
+    alignItems: 'center',
+    width: '100%',
+  },
+  contentWrapper: {
+    width: '100%',
+    maxWidth: 600,
   },
   card: {
     borderRadius: Radius.card,
@@ -329,6 +338,7 @@ const styles = StyleSheet.create({
     shadowRadius: 15,
     shadowOffset: { width: 0, height: 6 },
     elevation: 2,
+    width: '100%',
   },
   section: {
     marginBottom: 20,
