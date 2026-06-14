@@ -100,6 +100,7 @@ export default function HistoryScreen() {
         { label: 'Appliance', value: selectedItem.appliance || 'N/A' },
         { label: 'Category', value: selectedItem.category || 'N/A' },
         { label: 'Room', value: selectedItem.room || 'General' }, 
+        { label: 'Usage Value', value: `${selectedItem.value || 0} ${selectedItem.unit || ''}`.trim() },
         { label: 'Provider', value: selectedItem.provider || 'N/A' },
         { label: 'Rate', value: `₱${Number(selectedItem.rate || 0).toFixed(2)} /kWh` },
         { label: 'Usage Period', value: selectedItem.period || 'N/A' },
@@ -119,7 +120,7 @@ export default function HistoryScreen() {
       <View style={styles.cardHeader}>
         <View style={styles.textContainer}>
           <Text style={[styles.applianceName, { color: themeColors.text }]}>{item.appliance || 'Unknown'}</Text>
-          <Text style={[styles.categoryTag, { color: themeColors.textSecondary }]}>{`${item.category || 'Others'} • ${item.period || 'Daily'}`}</Text>
+          <Text style={[styles.categoryTag, { color: themeColors.textSecondary }]}>{`${item.category || 'Others'} • ${item.value || 0} ${item.unit || ''} • ${item.period || 'Daily'}`}</Text>
         </View>
         <Text style={[styles.statValue, { color: isDarkMode ? '#81C784' : '#1B5E20' }]}>₱{Number(item.monthly_cost || 0).toFixed(2)}</Text>
       </View>
