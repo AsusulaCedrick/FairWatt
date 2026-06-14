@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useFonts, Poppins_400Regular, Poppins_500Medium, Poppins_600SemiBold, Poppins_700Bold } from '@expo-google-fonts/poppins';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
+import { Provider as PaperProvider } from 'react-native-paper';
 
 import { AuthProvider, useAuth } from '../context/AuthContext';
 
@@ -53,7 +54,11 @@ function RootLayoutContent() {
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <RootLayoutContent />
+      {/* PaperProvider MUST wrap the navigation tree so Portal-based components
+          (Menu, Dialog, Snackbar) can find the portal host. */}
+      <PaperProvider>
+        <RootLayoutContent />
+      </PaperProvider>
     </AuthProvider>
   );
 }

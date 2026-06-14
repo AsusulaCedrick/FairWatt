@@ -199,10 +199,18 @@ export function getDashboardData(callback: (data: any) => void) {
         return;
       }
 
+      // 📅 MONTHLY FILTER: Only aggregate records from the current calendar month.
+      // History records remain fully intact — only the dashboard query scope changes.
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
+
       const { data: logs, error } = await supabase
         .from('energy_logs')
         .select('*')
         .eq('user_id', userId)
+        .gte('created_at', startOfMonth)
+        .lt('created_at', startOfNextMonth)
         .order('created_at', { ascending: false });
 
       const daysOfWeek = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
