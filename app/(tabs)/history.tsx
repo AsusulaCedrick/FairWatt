@@ -170,43 +170,49 @@ export default function HistoryScreen() {
 
   // ── Detail modal items ────────────────────────────────────────────────────
   const detailItems = selectedItem
-    ? [
-        { label: 'Appliance', value: selectedItem.appliance || 'N/A' },
-        { label: 'Category', value: selectedItem.category || 'N/A' },
-        { label: 'Room', value: selectedItem.room || 'General' },
-        { label: 'Usage Value', value: `${selectedItem.value || 0} ${selectedItem.unit || ''}`.trim() },
-        { label: 'Provider', value: selectedItem.provider || 'N/A' },
-        { label: 'Rate', value: `₱${Number(selectedItem.rate || 0).toFixed(2)} /kWh` },
-        { label: 'Usage Period', value: selectedItem.period || 'N/A' },
-        { label: 'Hours per Day', value: `${selectedItem.hours_used || 0}` },
-        { label: 'Quantity', value: `${selectedItem.quantity || 1}` },
-        { label: 'Daily Cost', value: `₱${Number(selectedItem.daily_cost || 0).toFixed(2)}` },
-        { label: 'Monthly Cost', value: `₱${Number(selectedItem.monthly_cost || 0).toFixed(2)}` },
-      ]
+    ? (() => {
+        const calculatedCost = (selectedItem.consumption_kwh || 0) * (selectedItem.rate || 0);
+        return [
+          { label: 'Appliance', value: selectedItem.appliance || 'N/A' },
+          { label: 'Category', value: selectedItem.category || 'N/A' },
+          { label: 'Room', value: selectedItem.room || 'General' },
+          { label: 'Usage Value', value: `${selectedItem.value || 0} ${selectedItem.unit || ''}`.trim() },
+          { label: 'Provider', value: selectedItem.provider || 'N/A' },
+          { label: 'Rate', value: `₱${Number(selectedItem.rate || 0).toFixed(2)} /kWh` },
+          { label: 'Usage Period', value: selectedItem.period || 'N/A' },
+          { label: 'Hours per Day', value: `${selectedItem.hours_used || 0}` },
+          { label: 'Quantity', value: `${selectedItem.quantity || 1}` },
+          { label: 'Actual Consumption (kWh)', value: `${Number(selectedItem.consumption_kwh || 0).toFixed(3)}` },
+          { label: 'Actual Cost (₱)', value: `₱${calculatedCost.toFixed(2)}` },
+        ];
+      })()
     : [];
 
   // ── Render item ───────────────────────────────────────────────────────────
-  const renderItem = ({ item }: { item: any }) => (
-    <TouchableOpacity
-      style={[styles.historyCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}
-      onPress={() => setSelectedItem(item)}
-      activeOpacity={0.8}
-    >
-      <View style={styles.cardHeader}>
-        <View style={styles.textContainer}>
-          <Text style={[styles.applianceName, { color: themeColors.text }]}>
-            {item.appliance || 'Unknown'}
-          </Text>
-          <Text style={[styles.categoryTag, { color: themeColors.textSecondary }]}>
-            {`${item.category || 'Others'} • ${item.value || 0} ${item.unit || ''} • ${item.period || 'Daily'}`}
+  const renderItem = ({ item }: { item: any }) => {
+    const calculatedCost = (item.consumption_kwh || 0) * (item.rate || 0);
+    return (
+      <TouchableOpacity
+        style={[styles.historyCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}
+        onPress={() => setSelectedItem(item)}
+        activeOpacity={0.8}
+      >
+        <View style={styles.cardHeader}>
+          <View style={styles.textContainer}>
+            <Text style={[styles.applianceName, { color: themeColors.text }]}>
+              {item.appliance || 'Unknown'}
+            </Text>
+            <Text style={[styles.categoryTag, { color: themeColors.textSecondary }]}>
+              {`${item.category || 'Others'} • ${(item.consumption_kwh || 0).toFixed(3)} kWh • ${item.period || 'Daily'}`}
+            </Text>
+          </View>
+          <Text style={[styles.statValue, { color: isDarkMode ? '#81C784' : '#1B5E20' }]}>
+            ₱{calculatedCost.toFixed(2)}
           </Text>
         </View>
-        <Text style={[styles.statValue, { color: isDarkMode ? '#81C784' : '#1B5E20' }]}>
-          ₱{Number(item.monthly_cost || 0).toFixed(2)}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   // ── Safe-area bottom padding for the pinned button ────────────────────────
   const pinnedButtonHeight = 70; // button height + vertical margin
@@ -366,15 +372,12 @@ export default function HistoryScreen() {
         <Text style={[styles.modalTitle, { color: themeColors.primary }]}>
           ⚡ FairWatt AI Analysis
         </Text>
-        <Text style={[styles.subTitle, { color: themeColors.textSecondary }]}>
-          Module 6: Energy Data Analyst Insights
-        </Text>
 
         {aiLoading ? (
           <View style={styles.aiLoadingContainer}>
             <ActivityIndicator size="large" color={themeColors.primary} />
             <Text style={[styles.aiLoadingText, { color: themeColors.textSecondary }]}>
-              Kasalukuyang sinusuri ng AI ang iyong appliance usage logs para sa bill prediction...
+              The AI is currently analyzing your appliance usage logs to provide an accurate bill prediction...
             </Text>
           </View>
         ) : (

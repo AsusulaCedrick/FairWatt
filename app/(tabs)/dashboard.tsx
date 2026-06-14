@@ -37,7 +37,7 @@ export default function DashboardScreen() {
   const { width: screenWidth } = useWindowDimensions();
 
   const [loading, setLoading] = useState(true);
-  const [totalMonthly, setTotalMonthly] = useState(0);
+  const [totalMonthlyKwh, setTotalMonthlyKwh] = useState(0);
   const [totalDaily, setTotalDaily] = useState(0);
   const [applianceCount, setApplianceCount] = useState(0);
   
@@ -71,7 +71,7 @@ export default function DashboardScreen() {
     }
 
     const unsubscribe = getDashboardData((data) => {
-      setTotalMonthly(data.totalMonthly);
+      setTotalMonthlyKwh(data.totalMonthlyKwh ?? 0);
       setTotalDaily(data.totalDaily);
       setApplianceCount(data.applianceCount);
       // Clean up pie data color tags to match theme colors dynamically
@@ -117,14 +117,14 @@ export default function DashboardScreen() {
       <View style={styles.contentWrapper}>
         <ScreenHeader
           title="Energy Dashboard"
-          subtitle="Live insights from appliance consumption and monthly cost trends."
+          subtitle="Actual recorded usage for this month."
         />
 
-        {/* SUMMARY CARD */}
+        {/* SUMMARY CARD — Accumulated actual kWh for the current month */}
         <View style={[styles.mainCard, { backgroundColor: themeColors.primary }]}>
-          <Text style={styles.labelWhite}>ESTIMATED MONTHLY BILL</Text>
+          <Text style={styles.labelWhite}>ACCUMULATED MONTHLY USAGE</Text>
           <Text style={styles.valueWhite}>
-            ₱ {totalMonthly.toLocaleString(undefined, {minimumFractionDigits: 2})}
+            {totalMonthlyKwh.toFixed(3)} kWh
           </Text>
         </View>
 

@@ -24,39 +24,66 @@ function calculateRecordCosts(data: any) {
   const numericQty = parseInt(data.quantity, 10) || 1;
   const numericRate = parseFloat(data.rate) || 0;
 
-  let dailyKwh = 0;
+  // Single Source of Truth formula: (Watts * Hours * Quantity) / 1000 if Watts, else (Value * Quantity)
+  const consumptionKwh = data.unit === 'Watts'
+    ? (numericValue * numericHours * numericQty) / 1000
+    : numericValue * numericQty;
+
   let dailyCost = 0;
   let monthlyCost = 0;
 
-  // 🛠️ FIX: Inayos ang math logic para sa kWh direct extraction tracking
   if (data.period === 'Monthly') {
-    dailyKwh = data.unit === 'Watts'
-      ? (numericValue / 1000) * numericHours * numericQty
-      : numericValue * numericQty; // Kung kWh na ang submeter value, hindi na kailangan i-multiply sa hours
-    
-    monthlyCost = dailyKwh * numericRate;
+    monthlyCost = consumptionKwh * numericRate;
     dailyCost = monthlyCost / 30;
   } else {
-    dailyKwh = data.unit === 'Watts'
-      ? (numericValue / 1000) * numericHours * numericQty
-      : numericValue * numericQty; // Iwas-overcharge sa automatic computing logs ng tenant
-      
-    dailyCost = dailyKwh * numericRate;
+    dailyCost = consumptionKwh * numericRate;
     monthlyCost = dailyCost * 30;
   }
 
-  return { dailyKwh, dailyCost, monthlyCost, numericValue, numericHours, numericQty, numericRate };
+  return { consumptionKwh, dailyCost, monthlyCost, numericValue, numericHours, numericQty, numericRate };
+}
+
+/**
+ * Maps a database log item containing the normalized consumption_kwh to dynamic computed legacy properties
+ * to maintain complete backwards-compatibility with the UI (history, dashboard, charts, and AI service).
+ */
+function mapLogToCalculated(item: any) {
+  // Use the new consumption_kwh column as Single Source of Truth if present.
+  // Otherwise fallback to legacy daily_kwh if it exists.
+  const consumptionKwh = (typeof item.consumption_kwh === 'number')
+    ? item.consumption_kwh
+    : (item.daily_kwh || 0);
+
+  const rate = item.rate || 0;
+  const period = item.period || 'Daily';
+
+  let dailyCost = 0;
+  let monthlyCost = 0;
+
+  if (period === 'Monthly') {
+    monthlyCost = consumptionKwh * rate;
+    dailyCost = monthlyCost / 30;
+  } else {
+    dailyCost = consumptionKwh * rate;
+    monthlyCost = dailyCost * 30;
+  }
+
+  return {
+    ...item,
+    daily_kwh: period === 'Monthly' ? consumptionKwh / 30 : consumptionKwh,
+    daily_cost: dailyCost,
+    monthly_cost: monthlyCost,
+    consumption_kwh: consumptionKwh,
+  };
 }
 
 // --- SAVE LOGIC ---
 export async function saveConsumptionRecord(data: any) {
-  // MODIFIED: Idinagdag ang 'room' sa pag-destructure mula sa pinapásang data payload
   const { appliance, category, room, unit, period, provider } = data;
-  const { dailyKwh, dailyCost, monthlyCost, numericValue, numericHours, numericQty, numericRate } = calculateRecordCosts(data);
+  const { consumptionKwh, dailyCost, numericValue, numericHours, numericQty, numericRate } = calculateRecordCosts(data);
 
   try {
     const user = await getAuthenticatedUser();
-    // ✅ AYOS: Diretsahang kinuha ang user.id para siguradong may maipasa sa RLS
     const userId = user?.id; 
 
     if (!userId || !isValidUUID(userId)) {
@@ -65,13 +92,15 @@ export async function saveConsumptionRecord(data: any) {
       return { success: false, error: msg };
     }
 
+    // Single Source of Truth: Save only the normalized consumption_kwh.
+    // Do not save daily_kwh, daily_cost, and monthly_cost columns.
     const { error } = await supabase
       .from('energy_logs')
       .insert([{
-        user_id: userId, // Siguradong pasok na ito sa RLS policy mo
+        user_id: userId,
         appliance: appliance,
         category: category,
-        room: room || 'General', // MODIFIED: Isinama ang room column kasama ang 'General' bilang safe default fallback
+        room: room || 'General',
         unit: unit,
         period: period || 'Daily',
         value: numericValue,
@@ -79,9 +108,7 @@ export async function saveConsumptionRecord(data: any) {
         quantity: numericQty,
         provider: provider,
         rate: numericRate,
-        daily_kwh: dailyKwh,
-        daily_cost: dailyCost,
-        monthly_cost: monthlyCost,
+        consumption_kwh: consumptionKwh,
         created_at: new Date().toISOString(),
       }]);
 
@@ -90,7 +117,9 @@ export async function saveConsumptionRecord(data: any) {
       return { success: false, error };
     }
 
-    return { success: true, dailyCost, monthlyCost };
+    // Return dailyKwh + original unit so the success modal can display
+    // the correct energy label (Watts vs kWh) matching the user's input.
+    return { success: true, dailyCost, dailyKwh: consumptionKwh, unit };
   } catch (error) {
     console.error('Error saving record:', error);
     return { success: false, error };
@@ -142,7 +171,10 @@ export function getConsumptionHistory(callback: (data: any[]) => void) {
         return;
       }
 
-      if (isMounted) callback(data || []);
+      if (isMounted) {
+        const mappedData = (data || []).map(mapLogToCalculated);
+        callback(mappedData);
+      }
     } catch (error) {
       console.error('Error fetching history:', error);
       if (isMounted) callback([]);
@@ -189,7 +221,7 @@ export function getDashboardData(callback: (data: any) => void) {
       const userId = user?.id;
       if (!userId || !isValidUUID(userId)) {
         if (isMounted) callback({
-          totalMonthly: 0,
+          totalMonthlyKwh: 0,
           totalDaily: 0,
           applianceCount: 0,
           pieData: [],
@@ -225,7 +257,7 @@ export function getDashboardData(callback: (data: any) => void) {
       if (error || !logs || logs.length === 0) {
         if (error) console.error('Supabase dashboard fetch error:', error);
         if (isMounted) callback({
-          totalMonthly: 0,
+          totalMonthlyKwh: 0,
           totalDaily: 0,
           applianceCount: 0,
           pieData: [],
@@ -235,7 +267,10 @@ export function getDashboardData(callback: (data: any) => void) {
         return;
       }
 
-      let tempMonthly = 0;
+      const mappedLogs = logs.map(mapLogToCalculated);
+
+      // 📊 ACTUAL TRACKER: Sum real kWh recorded this month; daily cost = today only.
+      let tempMonthlyKwh = 0;
       let tempDaily = 0;
       const categoryTotals: Record<string, number> = {};
       const applianceAggregator: Record<string, number> = {};
@@ -244,28 +279,35 @@ export function getDashboardData(callback: (data: any) => void) {
       const pitongArawNaNakaraan = new Date();
       pitongArawNaNakaraan.setDate(pitongArawNaNakaraan.getDate() - 7);
 
-      logs.forEach((item: any) => {
-        const { dailyCost, monthlyCost } = calculateRecordCosts(item);
+      // ISO boundary strings for today
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      const startOfTomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString();
+
+      mappedLogs.forEach((item: any) => {
         const categoryName = item.category || 'Others';
         
-        // 🛠️ TINAMPOK AT INAYOS: Ginawang lowercase ang key para basahin bilang ISA ang parehong spelling (light, LIGHT, Light)
+        // 🛠️ Case-insensitive appliance key — merges duplicates (light/Light/LIGHT → same bucket)
         const rawName = (item.appliance || item.appliance_name || 'Unknown').trim();
         const lowerName = rawName.toLowerCase();
 
-        tempMonthly += monthlyCost;
-        tempDaily += dailyCost;
+        // Accumulate actual energy (kWh) recorded for this month
+        tempMonthlyKwh += item.consumption_kwh;
 
-        categoryTotals[categoryName] = (categoryTotals[categoryName] || 0) + monthlyCost;
-        
-        // Pinagsasama na natin ang value gamit ang iisang case-insensitive key
-        applianceAggregator[lowerName] = (applianceAggregator[lowerName] || 0) + monthlyCost;
+        // Daily cost: ONLY records created today (actual, not a ×30 projection)
+        if (item.created_at >= startOfToday && item.created_at < startOfTomorrow) {
+          tempDaily += item.daily_cost;
+        }
+
+        // Charts: aggregate by actual daily cost (verified data, not projected monthly)
+        categoryTotals[categoryName] = (categoryTotals[categoryName] || 0) + item.daily_cost;
+        applianceAggregator[lowerName] = (applianceAggregator[lowerName] || 0) + item.daily_cost;
 
         const createdAt = item.created_at ? new Date(item.created_at) : null;
         if (createdAt && createdAt >= pitongArawNaNakaraan) {
           const itemDayLabel = daysOfWeek[createdAt.getDay()];
           const labelIdx = dynamicLabels.indexOf(itemDayLabel);
           if (labelIdx !== -1) {
-            weeklyTrendData[labelIdx] += dailyCost;
+            weeklyTrendData[labelIdx] += item.daily_cost;
           }
         }
       });
@@ -291,7 +333,7 @@ export function getDashboardData(callback: (data: any) => void) {
         .slice(0, 10);
 
       if (isMounted) callback({
-        totalMonthly: tempMonthly,
+        totalMonthlyKwh: tempMonthlyKwh,
         totalDaily: tempDaily,
         applianceCount: Object.keys(applianceAggregator).length,
         pieData: formattedPie,

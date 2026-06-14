@@ -125,7 +125,7 @@ export default function HomeScreen() {
     setShowConfirmModal(false);
     setSaving(true);
     try {
-      const { success, dailyCost, monthlyCost } = await saveConsumptionRecord({
+      const { success, dailyCost, dailyKwh: savedKwh } = await saveConsumptionRecord({
         appliance: formValues.appliance,
         category: formValues.category,
         room: formValues.room, 
@@ -140,11 +140,13 @@ export default function HomeScreen() {
 
       if (success) {
         const safeDaily = dailyCost || 0;
-        const safeMonthly = monthlyCost || 0;
+        const safeKwh = savedKwh || 0;
 
-        setResult({ daily: safeDaily, monthly: safeMonthly });
+        const displayMessage = `Daily Cost: ₱${safeDaily.toFixed(2)}\nEnergy Used: ${safeKwh.toFixed(3)} kWh`;
+
+        setResult({ daily: safeDaily, monthly: 0 });
         setShowResult(true);
-        setSuccessMessage(`Monthly estimated cost: ₱${safeMonthly.toFixed(2)}`);
+        setSuccessMessage(displayMessage);
         setShowSuccessModal(true);
         resetForm();
       }

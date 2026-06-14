@@ -282,6 +282,7 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
     width: '100%',
+    justifyContent: 'center',
   },
   webContainer: {
     width: '100%',

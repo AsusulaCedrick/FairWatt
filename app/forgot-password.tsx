@@ -195,6 +195,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     width: '100%',
+    justifyContent: 'center',
   },
   webContainer: {
     width: '100%',
@@ -205,7 +206,6 @@ const styles = StyleSheet.create({
     maxWidth: 600,
     paddingHorizontal: 24,
     justifyContent: 'center',
-    marginTop: -40, // offset upward slightly for optical balance
   },
   title: {
     ...Fonts.h1,
