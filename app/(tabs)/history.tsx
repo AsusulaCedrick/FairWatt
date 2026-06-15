@@ -152,7 +152,37 @@ export default function HistoryScreen() {
     setAiLoading(true);
     setAiModalVisible(true);
     try {
-      const insights = await getTenantPredictionAndTips(history);
+      // Group history entries by date (YYYY-MM-DD) for logs in the current calendar month
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth();
+
+      const dailyKwhMap: Record<string, number> = {};
+      let totalAccumulated = 0;
+      let rate = 11.50;
+
+      history.forEach((log) => {
+        if (!log.created_at) return;
+        const logDate = new Date(log.created_at);
+        
+        // Filter only current calendar month
+        if (logDate.getFullYear() === currentYear && logDate.getMonth() === currentMonth) {
+          const dateKey = log.created_at.split('T')[0];
+          const logKwh = Number(log.consumption_kwh || log.daily_kwh || 0);
+          dailyKwhMap[dateKey] = (dailyKwhMap[dateKey] || 0) + logKwh;
+          totalAccumulated += logKwh;
+          if (log.rate) {
+            rate = Number(log.rate);
+          }
+        }
+      });
+
+      const dailyLogs = Object.keys(dailyKwhMap).map((date) => ({
+        date,
+        totalKwh: dailyKwhMap[date],
+      })).sort((a, b) => a.date.localeCompare(b.date));
+
+      const insights = await getTenantPredictionAndTips(history, dailyLogs, totalAccumulated, rate);
       setAiResponse(insights);
     } catch (error) {
       console.error('AI Insight Error:', error);
